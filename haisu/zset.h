@@ -276,36 +276,6 @@ private:
 				{
 					return mid;
 				}
-
-				/*
-				const size_t cmplen = std::min(len, size_t(mid));
-				int res = memcmp(key, at(mid), cmplen);
-				key_type lhs = at(mid);
-				if (res > 0)
-				{
-					head = mid + 1;
-				}
-				else if (res < 0)
-				{
-					tail = mid;
-				}
-				else 
-				{
-					res = strcmp(key + cmplen, lhs + cmplen);
-					if (res > 0)
-					{
-						head = mid + 1;
-					}
-					else if (res < 0)
-					{
-						tail = mid;
-					}
-					else
-					{
-						return mid;
-					}
-				}
-				*/
 			}
 		}
 		
