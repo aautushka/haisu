@@ -1,0 +1,3 @@
+project(tests CXX)
+
+set(SRC zmap zbuf)
