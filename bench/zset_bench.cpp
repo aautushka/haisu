@@ -5,7 +5,7 @@
 static void bench_zset_failed_lookup_small_dataset(benchmark::State& state) 
 {
 	haisu::zset z = {"a", "b", "big", "bdi", "cite", "em", "font", "i", "img", "mark", "small", "span", "strike", "strong", "sub", "sup", "u"};
-	
+
 	while (state.KeepRunning())
 	{
 		z.count("abracadabra");

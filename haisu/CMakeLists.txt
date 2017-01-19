@@ -1,3 +1,7 @@
 project(tests CXX)
 
-set(SRC zmap zbuf)
+set(SRC 
+  zmap
+  zbuf
+  algo
+)

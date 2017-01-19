@@ -1,7 +1,7 @@
 #pragma once
 
-#include <limits>
 #include <algorithm>
+#include "algo.h"
 #include "zbuf.h"
 
 namespace haisu
@@ -253,33 +253,7 @@ private:
 
 	size_t find_pos(key_type key) const
 	{
-		size_t head = 0;
-		size_t tail = _size;
-
-		const size_t len = strlen(key);
-
-		while (head < tail)
-		{
-			size_t mid = (tail - head) / 2;
-			if (mid != tail)
-			{
-				const int res = strcmp(key, at(mid));
-				if (res > 0)
-				{
-					head = mid + 1;
-				}
-				else if (res < 0)
-				{
-					tail = mid;
-				}
-				else
-				{
-					return mid;
-				}
-			}
-		}
-		
-		return npos();
+		return algo::binary_search(*this, key);
 	}
 
 	size_t size_at(size_t pos) const
