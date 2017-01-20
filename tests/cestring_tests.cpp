@@ -1,6 +1,14 @@
+// https://gist.github.com/dabrahams/1457531
+// https://github.com/eliben/code-for-blog/blob/master/2014/variadic-tuple.cpp
+// http://eli.thegreenplace.net/2014/variadic-templates-in-c/
+// https://akrzemi1.wordpress.com/2011/05/11/parsing-strings-at-compile-time-part-i/
+// http://stackoverflow.com/questions/15858141/conveniently-declaring-compile-time-strings-in-c
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
+
+#define static_assert(Expr) static_assert(Expr, "")
 
 class cestring
 {
@@ -96,7 +104,7 @@ struct strlist<T, Ts...> : public strlist<Ts...>
 
 	template <int N> constexpr cestring get() const
 	{
-		return N == 0 ? t : this->base_type::get<0>();
+		return N == 0 ? t : base_type::template get<N-1>();
 	}
 
 	cestring t;
@@ -110,19 +118,19 @@ constexpr strlist<Ts...> generate_strlist(Ts... ts)
 
 TEST(cestring_test, compares_strings_at_compile_time)
 {
-	static_assert(cestring("hello") < cestring("world"), "");
-	static_assert(cestring("hello") == cestring("hello"), "");
-	static_assert(cestring("hello") != cestring("world"), "");
+	static_assert(cestring("hello") < cestring("world"));
+	static_assert(cestring("hello") == cestring("hello"));
+	static_assert(cestring("hello") != cestring("world"));
 }
 
 TEST(cestring_test, finds_string_len_at_compile_time)
 {
-	static_assert(cestring("hello").size() == 5, "");
+	static_assert(cestring("hello").size() == 5);
 }
 
 TEST(cestring_test, finds_min_value_at_compile_time)
 {
-	static_assert(1 == cemin(5, 4, 3, 2, 1), "");
+	static_assert(1 == cemin(5, 4, 3, 2, 1));
 }
 
 TEST(cestring_test, sorts_strlist_at_compile_time)
