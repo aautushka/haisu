@@ -10,15 +10,21 @@
 
 #define static_assert(Expr) static_assert(Expr, "")
 
-class cestring
+//namespace compile
+//{
+
+// 
+// compile-type c-string wrapper
+// 
+class string
 {
 public:
-	constexpr cestring() : _ptr(""), _size(0) {}
+	constexpr string() : _ptr(""), _size(0) {}
 
 	template <size_t Len>
-	constexpr cestring(const char(&ptr)[Len]) : _ptr(ptr), _size(Len - 1) {}
+	constexpr string(const char(&ptr)[Len]) : _ptr(ptr), _size(Len - 1) {}
 
-	constexpr cestring( const char* ptr) : _ptr(ptr), _size(strlen(ptr)) { }
+	constexpr string( const char* ptr) : _ptr(ptr), _size(strlen(ptr)) { }
 
 	constexpr const char* c_str() const
 	{
@@ -30,17 +36,17 @@ public:
 		return _size;
 	}
 
-	constexpr bool operator <(const cestring& other) const
+	constexpr bool operator <(const string& other) const
 	{
 		return strcmp(_ptr, other._ptr) < 0;
 	}
 
-	constexpr bool operator ==(const cestring& other) const
+	constexpr bool operator ==(const string& other) const
 	{
 		return 0 == strcmp(_ptr, other._ptr);
 	}
 
-	constexpr bool operator !=(const cestring& other) const
+	constexpr bool operator !=(const string& other) const
 	{
 		return !(*this == other);
 	}
@@ -50,93 +56,235 @@ private:
 	const size_t _size;
 };
 
+static_assert(string("hello") < string("world"));
+static_assert(string("hello") == string("hello"));
+static_assert(string("hello") != string("world"));
+static_assert(string("hello").size() == 5);
 
+
+//
+// finds min value
+//
 template <class T>
-constexpr T cemin(T t)
+constexpr T min(T t)
 {
 	return t;
 }
 
 template <class T, class... Ts>
-constexpr T cemin(T lhs, T rhs, Ts... ts)
+constexpr T min(T lhs, T rhs, Ts... ts)
 {
-	return lhs < rhs ? cemin(lhs, ts...) : cemin(rhs, ts...);
+	return lhs < rhs ? min(lhs, ts...) : min(rhs, ts...);
 }
 
+static_assert(1 == min(5, 4, 3, 2, 1));
 
+
+//
+// tuple containing only strings
+//
 template <class... Ts>
-struct celist
-{
-};
+struct struple { };
 
-template <class T, class... Ts>
-struct celist<T, Ts...> : public celist<Ts...>
+template <>
+struct struple<>
 {
-	celist(T t, Ts... ts)
-		: celist<Ts...>(ts...)
+	template <int N> constexpr string get() const
 	{
+		return string();
 	}
-
-	T t;
-};
-
-template <class... Ts>
-celist<Ts...> generate(Ts... ts)
-{
-	return celist<Ts...>(ts...);
-}
-
-template <class... Ts>
-struct strlist
-{
 };
 
 template <class T, class... Ts>
-struct strlist<T, Ts...> : public strlist<Ts...>
+struct struple<T, Ts...> : public struple<Ts...>
 {
-	using base_type = strlist<Ts...>;
+	using base_type = struple<Ts...>;
 
-	constexpr strlist(T t, Ts... ts)
-		: strlist<Ts...>(ts...)
+	constexpr struple(T t, Ts... ts)
+		: struple<Ts...>(ts...)
 		, t(t)
 	{
 	}
 
-	template <int N> constexpr cestring get() const
+	template <int N> constexpr string get() const
 	{
 		return N == 0 ? t : base_type::template get<N-1>();
 	}
 
-	cestring t;
+	string t;
 };
 
 template <class... Ts>
-constexpr strlist<Ts...> generate_strlist(Ts... ts)
+constexpr struple<Ts...> make_struple(Ts... ts)
 {
-	return strlist<Ts...>(ts...);
+	return struple<Ts...>(ts...);
 }
 
-TEST(cestring_test, compares_strings_at_compile_time)
+static_assert(make_struple("world", "hello").get<0>() == string("world"));
+static_assert(make_struple("world", "hello").get<1>() == string("hello"));
+static_assert(make_struple("world", "hello").get<3>() == string());
+
+
+//
+// compile-type list
+//
+struct nil 
 {
-	static_assert(cestring("hello") < cestring("world"));
-	static_assert(cestring("hello") == cestring("hello"));
-	static_assert(cestring("hello") != cestring("world"));
+	constexpr size_t size() const { return 0; }
+
+	template <typename T>
+	constexpr bool operator ==(const T& other) const 
+	{
+		return false;
+	}
+
+	template <typename T>
+	constexpr bool operator !=(const T& other) const
+	{
+		return !*(this == other);
+	}
+};
+
+template <> inline constexpr bool nil::operator ==(const nil& other) const { return true;}
+
+template <typename H, typename T = nil>
+struct cons_type
+{
+	using head_type = H;
+	using tail_type = T;
+
+	H head;
+	T tail;
+
+	constexpr cons_type()
+	{
+	}
+
+	constexpr cons_type(H h, T t)
+		: head(h), tail(t)
+	{
+	}
+
+	constexpr size_t size() const
+	{
+		return 1 + tail.size();
+	}
+
+	template <class U, class V>
+	constexpr bool operator ==(const cons_type<U, V> &other)
+	{
+		return head == other.head && tail == other.tail;
+	}
+
+	template <class U, class V>
+	constexpr bool operator !=(const cons_type<U, V>& other)
+	{
+		return !(*this == other);
+	}
+};
+
+template <typename H, typename T>
+constexpr cons_type<H, T> make_cons(H h, T t)
+{
+	return cons_type<H, T>(h, t);
 }
 
-TEST(cestring_test, finds_string_len_at_compile_time)
+template <class... Ts> struct type {};
+
+template <class H, class... Ts>
+struct type<H, Ts...>
 {
-	static_assert(cestring("hello").size() == 5);
+	using head = H;
+	using tail = typename type<Ts...>::get;
+	using get = cons_type<head, tail>;
+};
+
+template <class H>
+struct type<H>
+{
+	using head = H;
+	using tail = nil;
+	using get = cons_type<head, tail>;
+};
+
+template <class T, class... Ts>
+using cons_t = typename type<T, Ts...>::get;
+
+constexpr nil cons()
+{
+	return nil();
 }
 
-TEST(cestring_test, finds_min_value_at_compile_time)
+template <class T, class... Ts>
+constexpr cons_t<T, Ts...> cons(T t, Ts... ts)
 {
-	static_assert(1 == cemin(5, 4, 3, 2, 1));
+	return cons_t<T, Ts...>(t, cons(ts...));
 }
 
-TEST(cestring_test, sorts_strlist_at_compile_time)
-{
-	generate_strlist("world", "hello").get<0>();
 
-	//static_assert(generate_strlist("world", "hello").get<0>() == cestring("hello"), "");
+constexpr auto c1 = cons(1);
+constexpr auto c2 = cons(1, 2);
+constexpr auto c3 = cons(1, 2, 3);
+
+static_assert(cons(1).size() == 1);
+static_assert(cons(1, 2).size() == 2);
+static_assert(cons(1, 2, 3).size() == 3);
+
+static_assert(cons(1) == cons(1));
+static_assert(cons(1, 2, 3) == cons(1, 2, 3));
+
+static_assert(cons(1, 2, 3) != cons(1, 2, 5));
+static_assert(cons(1, 2, 3) != cons(1, 2, 3, 4));
+
+
+template <class T, class V>
+constexpr bool same(T t, V v)
+{
+	return false;
 }
+
+template <class T>
+constexpr bool same(T lhs, T rhs)
+{
+	return lhs == rhs;
+}
+
+static_assert(same(1, 1) == true);
+static_assert(same(1, 2) == false);
+static_assert(same(1, 1.0) == false);
+
+template <typename ConsT, bool = true>
+struct remove_head 
+{
+	using get = typename ConsT::tail_type;
+};
+
+template <typename ConsT>
+struct remove_head<ConsT, false>
+{
+	using get = ConsT;
+};
+
+template <typename Cons, typename Func>
+constexpr Cons transform(Cons c, Func f)
+{
+	return Cons(f(c.head), transform(c.tail, f));
+}
+
+template <typename Func>
+constexpr nil transform(nil, Func)
+{
+	return nil();
+}
+
+constexpr int increment(int t) { return t + 1; }
+static_assert(transform(cons(1), increment) == cons(2));
+
+template <typename Cons>
+Cons bubble_sort(Cons c)
+{
+	return c;
+}
+
+auto a = bubble_sort(cons(1, 2, 3));
 
