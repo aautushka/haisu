@@ -1,6 +1,30 @@
 #include "benchmark/benchmark_api.h"
 #include "haisu/zset.h"
 #include <set>
+#include <algorithm>
+
+
+template <typename T>
+class sorted_vec
+{
+public:
+	sorted_vec(std::initializer_list<T> ll)
+	{
+		for (auto l: ll)
+		{
+			vec.push_back(l);
+		}
+		std::sort(vec.begin(), vec.end());
+	}
+
+	size_t count(const T& needle) const
+	{
+		return std::binary_search(vec.begin(), vec.end(), needle) ? 1 : 0;
+	}
+	
+private:
+	std::vector<T> vec;
+};
 
 static void bench_zset_failed_lookup_small_dataset(benchmark::State& state) 
 {
@@ -8,7 +32,8 @@ static void bench_zset_failed_lookup_small_dataset(benchmark::State& state)
 
 	while (state.KeepRunning())
 	{
-		z.count("abracadabra");
+		for (int i = 0; i < 1000; ++i)
+			volatile auto a = z.count("abracadabra");
 	}
 }
 
@@ -19,7 +44,20 @@ static void bench_set_failed_lookup_small_dataset(benchmark::State& state)
 	
 	while (state.KeepRunning())
 	{
-		z.count(needle);
+		for (int i = 0; i < 1000; ++i)
+			volatile auto a = z.count(needle);
+	}
+}
+
+static void bench_sorted_vec_failed_lookup_small_dataset(benchmark::State& state) 
+{
+	sorted_vec<std::string> z = {"a", "b", "big", "bdi", "cite", "em", "font", "i", "img", "mark", "small", "span", "strike", "strong", "sub", "sup", "u"};
+	std::string needle("abracadabra");
+	
+	while (state.KeepRunning())
+	{
+		for (int i = 0; i < 1000; ++i)
+			volatile auto a = z.count(needle);
 	}
 }
 
@@ -41,7 +79,8 @@ static void bench_zset_failed_lookup_large_dataset(benchmark::State& state)
 	
 	while (state.KeepRunning())
 	{
-		z.count("abracadabra");
+		for (int i = 0; i < 1000; ++i)
+			volatile auto a = z.count("abracadabra");
 	}
 }
 
@@ -65,7 +104,8 @@ static void bench_set_failed_lookup_large_dataset(benchmark::State& state)
 	
 	while (state.KeepRunning())
 	{
-		z.count(needle);
+		for (int i = 0; i < 1000; ++i)
+			volatile auto a  = z.count(needle);
 	}
 }
 
@@ -74,5 +114,6 @@ BENCHMARK(bench_zset_failed_lookup_small_dataset);
 BENCHMARK(bench_set_failed_lookup_small_dataset);
 BENCHMARK(bench_zset_failed_lookup_large_dataset);
 BENCHMARK(bench_set_failed_lookup_large_dataset);
+BENCHMARK(bench_sorted_vec_failed_lookup_small_dataset);
 
 BENCHMARK_MAIN();

@@ -38,12 +38,20 @@ struct three_way_cmp<const char*>
 	}
 };
 
+template <>
+struct three_way_cmp<std::string>
+{
+	int operator ()(const std::string& lhs, const std::string& rhs) const
+	{
+		return lhs.compare(rhs);
+	}
+};
+
 template <typename Container, typename Key, typename Cmp = three_way_cmp<Key>>
-size_t binary_search(const Container& container, Key key)
+size_t binary_search(const Container& container, Key key, Cmp cmp = Cmp())
 {
 	size_t head = 0;
 	size_t tail = container.size();
-	const Cmp cmp;
 
 	while (head < tail)
 	{
