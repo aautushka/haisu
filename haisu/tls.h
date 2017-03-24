@@ -2,10 +2,23 @@
 
 #include <atomic>
 #include <functional>
+#include <type_traits>
 
 namespace haisu
 {
-	
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type nil_value()
+{
+	return 0;
+}
+
+template <typename T>
+typename std::enable_if<!std::is_integral<T>::value, T>::type nil_value()
+{
+	return T();
+}
+
 // thread-safe fixed-length linear-probing open addressing hash table 
 // can't grow, can't rehash
 // designed to be as simple as possible and hopefully fast
@@ -14,7 +27,7 @@ class linear_hash
 {
 public:
 	linear_hash()
-		: linear_hash(Key())
+		: linear_hash(nil_value<Key>())
 	{
 	}
 
