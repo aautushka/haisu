@@ -19,6 +19,21 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type nil_value()
 	return T();
 }
 
+template <typename T>
+struct direct_hash
+{
+	constexpr T operator ()(T t) const { return t; }
+};
+
+template <typename T>
+struct amiga_hash
+{
+	constexpr int32_t operator ()(T t) const
+	{
+		return t * 0xdeece66d + 0xb;
+	}
+};
+
 // thread-safe fixed-length linear-probing open addressing hash table 
 // can't grow, can't rehash
 // designed to be as simple as possible and hopefully fast
