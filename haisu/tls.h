@@ -155,7 +155,7 @@ private:
 	size_t _size;
 };
 
-// this is a thread local storage implemented on top of hash container
+// this is an almost thread local storage implemented on top of hash container
 // the problem with the regular thread_local is it's lifespan
 // the thread_local variable lives as long as the thread 
 // if you want to be able to recreate the thread_local object you're in trouble
