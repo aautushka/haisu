@@ -4,6 +4,8 @@
 #include <functional>
 #include <type_traits>
 
+#include <sys/types.h>
+
 namespace haisu
 {
 
@@ -52,6 +54,9 @@ public:
 	{
 		clear();
 	}
+
+	linear_hash(linear_hash&) = delete;
+	linear_hash& operator =(linear_hash&) = delete;
 	
 	~linear_hash()
 	{
@@ -162,18 +167,19 @@ class tls
 {
 public:
 	tls()
-		: _t(nullptr)
 	{
 	}
 
 	explicit tls(T* t)
-		: _t(t)
 	{
+		reset(t);
 	}
 
 	~tls()
 	{
-		delete _t;
+		// TODO
+		// do we want to instantly remove all objects in all threads
+		// or we allow memory to leak
 	}
 	
 	tls(const tls&) = delete;
@@ -181,39 +187,57 @@ public:
 
 	T& operator *()
 	{
-		return *_t;
+		return *get_thread_local();
 	}
 
 	const T& operator *() const
 	{
-		return *_t;
+		return *get_thread_local();
 	}
 
 	T* operator ->()
 	{
-		return _t;
+		return get_thread_local();
 	}
 
 	const T* operator ->() const
 	{
-		return _t;
+		return get_thread_local();
 	}
 
 	T* release()
 	{
-		T* out = _t;
-		_t = nullptr;
+		T* out = get_thread_local();
+		_hash.erase(get_thread_id());
 		return out;
 	}
 
 	void reset(T* t = nullptr)
 	{
-		delete _t;
-		_t = t;
+		T*& prev  = get_thread_local();
+		delete prev;
+		prev = t;
 	}
 
 private:
-	T* _t;
+	static int32_t get_thread_id()
+	{
+		//return ::gettid();	
+		//return pthread_self();
+		assert(false);
+	}
+
+	T*& get_thread_local()
+	{
+		return _hash[get_thread_id()];
+	}
+	
+	const T*& get_thread_local() const
+	{
+		return _hash[get_thread_id()];
+	}
+
+	linear_hash<int32_t, T*, N> _hash;  
 };
 } // namespace haisu 
 
