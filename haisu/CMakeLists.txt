@@ -4,4 +4,5 @@ set(SRC
   zmap
   zbuf
   algo
+  tls
 )
