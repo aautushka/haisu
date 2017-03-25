@@ -155,12 +155,12 @@ private:
 	size_t _size;
 };
 
-// this is an almost thread local storage implemented on top of hash container
-// the problem with the regular thread_local is it's lifespan
-// the thread_local variable lives as long as the thread 
-// if you want to be able to recreate the thread_local object you're in trouble
-// the tls<N> class addresses the issue
-// it has one major drawback: it's significantly slower, but sometimes that's okay
+// this is a thread local storage implemented on top of a hash container
+// the problem with the regular thread_local is its lifespan,
+// the thread_local variable lives as long as the thread does,
+// if you want to be able to recreate the thread_local object all at once you're in trouble
+// the tls class addresses the issue, you may have as many tls objects as you want
+// but it comes with a price:it's significantly slower, but sometimes that's okay
 // the class is inspired by boost::thread_specific_ptr
 template <typename T, int N = 131>
 class tls
@@ -179,7 +179,10 @@ public:
 	{
 		// TODO
 		// do we want to instantly remove all objects in all threads
-		// or we allow memory to leak
+		// or we allow memory to leak?
+		// guess the lifespan of such an object should be greater 
+		// than that of any thread
+		reset_all();
 	}
 	
 	tls(const tls&) = delete;
@@ -217,6 +220,11 @@ public:
 		T*& prev  = get_thread_local();
 		delete prev;
 		prev = t;
+	}
+
+	void reset_all()
+	{
+		_hash.clear();
 	}
 
 private:
