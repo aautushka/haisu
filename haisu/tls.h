@@ -6,6 +6,11 @@
 
 #include <sys/types.h>
 
+#ifndef gettid
+#include <sys/syscall.h>
+#define gettid() syscall(SYS_gettid)
+#endif
+
 namespace haisu
 {
 
@@ -101,7 +106,8 @@ public:
 	{
 		return _size;
 	}
-
+	
+	// not thread-safe
 	void clear()
 	{
 		for (int i = 0; i < N; ++i)
@@ -111,6 +117,20 @@ public:
 		}
 		_size = 0;
 	}
+
+	// not thread-safe
+	template <typename Func>
+	void foreach(Func func)
+	{
+		for (int i = 0; i < N; ++i)
+		{
+			if (_data[i].key != _nil)
+			{
+				func(_data[i].key.load(), _data[i].value);
+			}
+		}
+	}
+		
 
 private:
 	struct pair_t
@@ -162,6 +182,7 @@ private:
 // the tls class addresses the issue, you may have as many tls objects as you want
 // but it comes with a price:it's significantly slower, but sometimes that's okay
 // the class is inspired by boost::thread_specific_ptr
+// loosely replicates the interface of std::shared_ptr
 template <typename T, int N = 131>
 class tls
 {
@@ -182,7 +203,7 @@ public:
 		// or we allow memory to leak?
 		// guess the lifespan of such an object should be greater 
 		// than that of any thread
-		reset_all();
+		clear();
 	}
 	
 	tls(const tls&) = delete;
@@ -222,17 +243,27 @@ public:
 		prev = t;
 	}
 
-	void reset_all()
+	void clear()
 	{
+		_hash.foreach([](int32_t, T* t){delete t;});
 		_hash.clear();
+	}
+
+	T* get()
+	{
+		return get_thread_local();
+	}
+
+	const T* get() const
+	{
+		return get_thread_local();
 	}
 
 private:
 	static int32_t get_thread_id()
 	{
-		//return ::gettid();	
+		return gettid();	
 		//return pthread_self();
-		assert(false);
 	}
 
 	T*& get_thread_local()

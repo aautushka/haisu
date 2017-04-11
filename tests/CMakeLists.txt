@@ -8,6 +8,7 @@ set(SRC
   zbuf_tests
   binary_search_tests
   linear_hash_tests
+  tls_tests
 )
 
 add_executable(tests ${SRC})

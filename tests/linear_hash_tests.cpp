@@ -99,3 +99,16 @@ TEST_F(linear_hash_test, clears_hash)
 
 	EXPECT_EQ(0, hash.size());
 }
+
+TEST_F(linear_hash_test, traverses_assigned_nodes)
+{
+	hash[1] = 2;
+	hash[3] = 4;
+
+	std::map<int, int> actual;
+	std::map<int, int> expected = {{1, 2}, {3, 4}};
+
+	hash.foreach([&](int key, int val){actual[key] = val; });
+
+	EXPECT_EQ(expected, actual);
+}
