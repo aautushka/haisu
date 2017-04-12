@@ -5,4 +5,5 @@ set(SRC
   zbuf
   algo
   tls
+  memory
 )

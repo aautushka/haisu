@@ -9,6 +9,8 @@ set(SRC
   binary_search_tests
   linear_hash_tests
   tls_tests
+  podbump_tests
+  allocator_tests
 )
 
 add_executable(tests ${SRC})
