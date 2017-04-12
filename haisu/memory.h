@@ -1,12 +1,10 @@
 #pragma once
 
 #include <sys/mman.h>
+#include "intrusive.h"
 
 namespace haisu
 {
-namespace mem
-{
-
 // memory map class, a thin wrapper around mmap 
 class memap
 {
@@ -25,6 +23,22 @@ public:
 
 	memap(const memap&) = delete;
 	memap& operator =(const memap&) = delete;
+
+	memap(memap&& other)
+	{
+		*this = std::move(other);
+	}
+
+	memap& operator =(memap&& other)
+	{
+		_ptr = other._ptr;
+		other._ptr = nullptr;
+
+		_size = other._size;
+		other._size = 0;
+
+		return *this;
+	}
 
 	void* get()
 	{
@@ -46,9 +60,13 @@ public:
 	void destroy()
 	{
 		assert(created());
-		munmap(_ptr, _size);
+		const size_t size = _size;
+		void* const ptr = _ptr;
+
 		_ptr = nullptr;
 		_size = 0;
+
+		munmap(ptr, size);
 	}
 
 private:
@@ -66,18 +84,37 @@ private:
 // not ctor/dtor are being called
 // can be freed all at once, no individual free operations are supported
 // does not use heap memory
-class podbump
+//
+// TODO: alignment
+class bufbump
 {
 public:
-	explicit podbump(size_t size = 1024)
+	bufbump()
 	{
-		_map.create(size);
-		_cursor = _map.get();
 	}
 
-	~podbump()
+	explicit bufbump(void* ptr, size_t size)
 	{
-		_map.destroy();
+		assign(ptr, size);
+	}
+
+	bufbump(const bufbump&) = delete;
+	bufbump& operator =(const bufbump&) = delete;
+
+	bufbump(bufbump&& other)
+	{
+		*this = std::move(other);
+	}
+
+	bufbump& operator =(bufbump&& other)
+	{
+		_cursor = other._cursor;
+		_size = other._size;
+		_ptr = other._ptr;
+		_refs = other._refs;
+
+		other.reset();
+		return *this;
 	}
 
 	template <typename T> T* alloc()
@@ -104,11 +141,27 @@ public:
 
 		if (--_refs == 0)
 		{
-			_cursor = _map.get();
+			_cursor = begin(); 
 		}
 	}
 
+	void assign(void* ptr, size_t size)
+	{
+		_cursor = ptr;
+		_size = size;
+		_ptr = ptr;
+		_refs = 0;
+	}
+
 private:
+	void reset()
+	{
+		_cursor = nullptr;
+		_size = 0;
+		_ptr = nullptr;
+		_refs = 0;
+	}
+
 	bool owns(void *ptr)
 	{
 		return ptr >= begin() && ptr < end();
@@ -126,7 +179,7 @@ private:
 
 	size_t size()
 	{
-		return _map.size();
+		return _size; 
 	}
 
 	uint8_t* cursor()
@@ -136,12 +189,12 @@ private:
 
 	uint8_t* begin()
 	{
-		return static_cast<uint8_t*>(_map.get());
+		return static_cast<uint8_t*>(_ptr);
 	}
 
 	uint8_t* end()
 	{
-		return static_cast<uint8_t*>(_map.get()) + size();
+		return begin() + size();
 	}
 
 	void move_cursor(int delta)
@@ -149,11 +202,143 @@ private:
 		_cursor = cursor() + delta;
 	}
 
-	memap _map;
+	void* _ptr = nullptr;
+	size_t _size = 0;
 	int _refs = 0;
 	void* _cursor = nullptr;
 };
 
+// a pointer-bump memory running on top of mmap
+// once all memory is exhausted it stops allocating and returns nullptr
+// never grows
+class podbump
+{
+public:
+	explicit podbump(size_t size = 4 * 1024)
+	{
+		_map.create(size);
+		_bump.assign(_map.get(), _map.size());
+
+	}
+
+	~podbump()
+	{
+		_map.destroy();
+	}
+
+	void* alloc(size_t size)
+	{
+		return _bump.alloc(size);
+	}
+
+	void free(void* ptr)
+	{
+		_bump.free(ptr);
+	}
+
+	template <typename T>
+	T* alloc()
+	{
+		return _bump.alloc<T>();
+	}
+
+private:
+	memap _map;
+	bufbump _bump;
+};
+
+// a mmap-based pointer-bump memory
+// adds more mmap's when exhausted
+class growbump
+{
+	enum {BLOCK_SIZE = 4096};
+public:
+	growbump()
+	{
+		_list.push_back(*create_node());
+	}
+
+	~growbump()
+	{
+		while (!_list.empty())
+		{
+			node_t& node = _list.pop_front();
+			node.~node();
+		}
+	}
+
+	void* alloc(size_t size)
+	{
+		void* res = _list.back().data.bump.alloc(size);
+		if (nullptr == res)
+		{
+			if (size < BLOCK_SIZE - sizeof(node_t))
+			{
+				// TODO: we might be wasting memory here when we prematurely push it to backlog
+				auto node = create_node(BLOCK_SIZE);
+				_list.push_back(*node);
+				return alloc(size);
+			}
+			else
+			{
+				auto node = create_node(size + sizeof(node_t)); 
+				_list.push_front(*node);
+				return node->data.bump.alloc(size);
+			}
+		}
+	}
+
+	template <typename T>
+	T* alloc()
+	{
+		void* res = alloc(sizeof(T));
+		return static_cast<T*>(res);
+	}
+
+	void free()
+	{
+		// TODO
+	}
+
+private:
+
+	struct header
+	{
+		memap map;
+		bufbump bump;
+
+		header() {}
+		header(header&& other) : map(std::move(other.map)), bump(std::move(other.bump)) {} 
+	};
+
+	using list = intrusive_list<header>;
+	using node_t = list::node;
+
+
+	node_t* create_node(size_t size = BLOCK_SIZE)
+	{
+		memap map;
+		map.create(size);	
+
+		void* ptr = map.get();
+		assert(sizeof(list::node) < map.size());
+
+		list::node* node = new(ptr) list::node;
+
+		void* user_data = static_cast<uint8_t*>(ptr) + sizeof(list::node);
+		size_t user_size = map.size() - sizeof(list::node);
+
+		node->data.bump.assign(user_data, user_size);
+		node->data.map = std::move(map);
+		
+		return node;
+	}
+
+	list _list;	
+
+}; 
+
+// std-style allocator needed for inteoperability with standard containers
 template <typename T, typename mem_t>
 class allocator
 {
@@ -252,7 +437,6 @@ private:
 	mem_t* _mem = nullptr;
 };
 
-} // namespace mem
 } // namespace haisu
 
 

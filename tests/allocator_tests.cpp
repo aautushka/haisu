@@ -3,8 +3,8 @@
 
 struct allocator_test : ::testing::Test
 {
-	using mem_t = haisu::mem::podbump;
-	using allocator_t = haisu::mem::allocator<int, mem_t>;
+	using mem_t = haisu::podbump;
+	using allocator_t = haisu::allocator<int, mem_t>;
 
 	mem_t mem;
 	allocator_t allocator;

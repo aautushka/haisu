@@ -6,4 +6,5 @@ set(SRC
   algo
   tls
   memory
+  intrusive
 )

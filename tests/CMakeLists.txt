@@ -11,6 +11,9 @@ set(SRC
   tls_tests
   podbump_tests
   allocator_tests
+  intrusive_list_tests
+  list_tests
+  growbump_tests
 )
 
 add_executable(tests ${SRC})

@@ -3,7 +3,7 @@
 
 struct podbump_test : ::testing::Test
 {
-	haisu::mem::podbump pod;
+	haisu::podbump pod;
 };
 
 TEST_F(podbump_test, allocates_memory)
@@ -34,7 +34,7 @@ TEST_F(podbump_test, subsequent_allocation_do_not_interfere_with_one_another)
 
 TEST_F(podbump_test, return_null_if_memory_was_exhausted)
 {
-	haisu::mem::podbump pod(sizeof(int));
+	haisu::podbump pod(sizeof(int));
 	int* p = pod.alloc<int>();
 	ASSERT_TRUE(p != nullptr);
 
@@ -43,7 +43,7 @@ TEST_F(podbump_test, return_null_if_memory_was_exhausted)
 
 TEST_F(podbump_test, recycles_memory)
 {
-	haisu::mem::podbump pod(sizeof(int));
+	haisu::podbump pod(sizeof(int));
 	int* p = pod.alloc<int>();
 	pod.free(p);
 
