@@ -151,6 +151,31 @@ public:
 		return *res;
 	}
 
+	void erase(node& n)
+	{
+		if (n.prev && n.next)
+		{
+			n.prev->next = n.next;
+			n.next->prev = n.prev;
+		}
+		else if (n.prev)
+		{
+			tail = n.prev;
+			tail->next = nullptr;
+		}
+		else if (n.next)
+		{
+			head = n.next;
+			head->prev = nullptr;
+		}
+		else
+		{
+			clear();
+		}
+
+		n.next = n.prev = nullptr;
+	}
+
 	void clear()
 	{
 		tail = head = nullptr;

@@ -114,3 +114,56 @@ TEST_F(intrusive_list_tests, clears_list)
 	EXPECT_TRUE(list.empty());
 }
 
+TEST_F(intrusive_list_tests, clears_list_by_erasing_its_single_node)
+{
+	mylist::node n(123);
+	list.push_back(n);
+	list.erase(n);
+
+	EXPECT_TRUE(list.empty());
+}
+
+TEST_F(intrusive_list_tests, erases_node_from_list_front)
+{
+	mylist::node n1(123);
+	mylist::node n2(456);
+
+	list.push_back(n1);
+	list.push_back(n2);
+
+	list.erase(n1);
+
+	EXPECT_EQ(1, list.size());
+	EXPECT_EQ(456, list.front());
+}
+
+TEST_F(intrusive_list_tests, erases_node_from_list_back)
+{
+	mylist::node n1(123);
+	mylist::node n2(456);
+
+	list.push_back(n1);
+	list.push_back(n2);
+
+	list.erase(n2);
+
+	EXPECT_EQ(1, list.size());
+	EXPECT_EQ(123, list.front());
+}
+
+TEST_F(intrusive_list_tests, erases_node_from_the_middle)
+{
+	mylist::node n1(123);
+	mylist::node n2(456);
+	mylist::node n3(789);
+
+	list.push_back(n1);
+	list.push_back(n2);
+	list.push_back(n3);
+
+	list.erase(n2);
+
+	EXPECT_EQ(2, list.size());
+	EXPECT_EQ(123, list.front());
+	EXPECT_EQ(789, list.back());
+}
