@@ -329,6 +329,7 @@ private:
 		void* freemem = ptr + overhead();
 		size_t freesize = map.size() - overhead(); 
 
+		// TODO: what if T is an integral type
 		node->data.man.assign(freemem, freesize);
 		node->data.map = std::move(map);
 		
