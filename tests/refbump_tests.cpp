@@ -73,3 +73,24 @@ TEST_F(refbump_test, allocates_two_arenas)
 	EXPECT_EQ(2, memory.arena_count());
 }
 
+TEST_F(refbump_test, frees_large_arena_if_there_are_no_more_references)
+{
+	return;
+	void* p1 = memory.alloc<int>();
+	void* p2 = memory.alloc(10 * 1024 * 1024); // this guarantees we have an additional huge arena
+
+	memory.free(p2);
+
+	EXPECT_EQ(1, memory.arena_count());
+}
+
+TEST_F(refbump_test, frees_small_arena_if_there_are_no_more_references)
+{
+	void* p1 = memory.alloc<int>();
+	void* p2 = memory.alloc(10 * 1024 * 1024); // this guarantees we have an additional huge arena
+
+	memory.free(p1);
+
+	EXPECT_EQ(1, memory.arena_count());
+}
+

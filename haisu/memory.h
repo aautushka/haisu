@@ -289,6 +289,9 @@ public:
 
 	void erase(T& t)
 	{
+		node_t& node = reinterpret_cast<node_t&>(t);
+		_list.erase(node);
+		node.~node();
 	}
 
 	T& front()
@@ -446,8 +449,7 @@ public:
 
 	void* alloc(size_t size)
 	{
-		auto& man = back();
-		void** res = static_cast<void**>(man.alloc(size + overhead()));
+		void* res = alloc_from(back(), size);
 
 		if (nullptr == res)
 		{
@@ -460,12 +462,11 @@ public:
 			else
 			{
 				auto& man = _list.push_front(size + overhead());
-				return man.alloc(size);
+				return alloc_from(man, size);
 			}
 		}
 
-		*res = &man;
-		return ++res;
+		return res;
 	}
 
 	template <typename T>
@@ -477,8 +478,8 @@ public:
 
 	void free(void* ptr)
 	{
-		void* head = static_cast<void**>(ptr) - 1;
-		bufbump* mem = static_cast<bufbump*>(head);
+		void** head = static_cast<void**>(ptr) - 1;
+		bufbump* mem = static_cast<bufbump*>(*head);
 
 		mem->free(ptr);
 		if (mem->refs() == 0)
@@ -494,6 +495,18 @@ public:
 	}
 
 private:
+	void* alloc_from(bufbump& man, size_t size)
+	{
+		void** res = static_cast<void**>(man.alloc(size + overhead()));
+		if (res)
+		{
+			*res = &man;
+			return ++res;
+		}
+
+		return nullptr;
+	}
+
 	static constexpr size_t overhead()
 	{
 		return sizeof(void*);
