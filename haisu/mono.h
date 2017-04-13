@@ -143,7 +143,7 @@ public:
 
 	T top() const
 	{
-		assert(_size > 0 && _size < N);
+		assert(_size > 0 && _size <= N);
 
 		return _stack[_size - 1];
 	}
