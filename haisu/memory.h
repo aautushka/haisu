@@ -247,18 +247,17 @@ private:
 	bufbump _bump;
 };
 
-// a mmap-based pointer-bump memory
-// adds more mmap's when exhausted
-class growbump
+// a linked list of mmap objects
+// T is a payload type, a memory managing structure
+template <typename T>
+class melist
 {
-	enum {BLOCK_SIZE = 4096};
 public:
-	growbump()
+	melist()
 	{
-		_list.push_back(*create_node());
 	}
 
-	~growbump()
+	~melist()
 	{
 		while (!_list.empty())
 		{
@@ -267,23 +266,115 @@ public:
 		}
 	}
 
+	// TODO: align to page size
+	T& push_back(size_t size)
+	{
+		auto node = create_node(size + overhead()); 
+		_list.push_back(*node);
+		return node->data.man;
+	}
+
+	// TODO: align to page size
+	T& push_front(size_t size)
+	{
+		auto node = create_node(size + overhead()); 
+		_list.push_front(*node);
+		return node->data.man;
+	}
+
+	T& front()
+	{
+		return _list.front().data.man;
+	}
+
+	T& back()
+	{
+		return _list.back().data.man;
+	}
+
+	static constexpr size_t overhead()
+	{
+		return sizeof(node_t);
+	}
+
+	bool empty() const
+	{
+		return _list.empty();
+	}
+private:
+
+	struct header
+	{
+		memap map;
+		T man;	
+
+		header() {}
+		header(header&& other) : map(std::move(other.map)), man(std::move(other.man)) {} 
+	};
+
+	using list = intrusive_list<header>;
+	using node_t = typename list::node;
+
+	node_t* create_node(size_t size)
+	{
+		memap map;
+		map.create(size);	
+
+		uint8_t* ptr = static_cast<uint8_t*>(map.get());
+		assert(overhead() < map.size());
+
+		auto node = new(ptr) node_t;
+
+		// TODO: alignment
+		void* freemem = ptr + overhead();
+		size_t freesize = map.size() - overhead(); 
+
+		node->data.man.assign(freemem, freesize);
+		node->data.map = std::move(map);
+		
+		return node;
+	}
+
+	list _list;	
+
+};
+
+// a mmap-based pointer-bump memory
+// adds more mmap's when exhausted
+// never free's individual allocations
+// never recycles the used memory
+// frees all memory all at once in .dtor
+// has almost no memory overhead
+// never uses heap
+// TODO: implement memory alignment strategy
+class growbump
+{
+	using list_t = melist<bufbump>;
+	enum {BLOCK_SIZE = 4096 - list_t::overhead()};
+public:
+	growbump(growbump&) = delete;
+	growbump operator =(growbump&) = delete;
+
+	growbump() 
+	{
+		_list.push_back(BLOCK_SIZE);
+	}
+
 	void* alloc(size_t size)
 	{
-		void* res = _list.back().data.bump.alloc(size);
+		void* res = back().alloc(size);
 		if (nullptr == res)
 		{
-			if (size < BLOCK_SIZE - sizeof(node_t))
+			if (size < BLOCK_SIZE)
 			{
 				// TODO: we might be wasting memory here when we prematurely push it to backlog
-				auto node = create_node(BLOCK_SIZE);
-				_list.push_back(*node);
+				_list.push_back(BLOCK_SIZE);
 				return alloc(size);
 			}
 			else
 			{
-				auto node = create_node(size + sizeof(node_t)); 
-				_list.push_front(*node);
-				return node->data.bump.alloc(size);
+				auto& man = _list.push_front(size);
+				return man.alloc(size);
 			}
 		}
 	}
@@ -297,46 +388,38 @@ public:
 
 	void free()
 	{
-		// TODO
+		// do not implement this methods
+		// the class is not capable of freeing memory
+		// it's optimized for memory usage and sheer performance
 	}
 
 private:
 
-	struct header
+	bufbump& back()
 	{
-		memap map;
-		bufbump bump;
-
-		header() {}
-		header(header&& other) : map(std::move(other.map)), bump(std::move(other.bump)) {} 
-	};
-
-	using list = intrusive_list<header>;
-	using node_t = list::node;
-
-
-	node_t* create_node(size_t size = BLOCK_SIZE)
-	{
-		memap map;
-		map.create(size);	
-
-		void* ptr = map.get();
-		assert(sizeof(list::node) < map.size());
-
-		list::node* node = new(ptr) list::node;
-
-		void* user_data = static_cast<uint8_t*>(ptr) + sizeof(list::node);
-		size_t user_size = map.size() - sizeof(list::node);
-
-		node->data.bump.assign(user_data, user_size);
-		node->data.map = std::move(map);
-		
-		return node;
+		return _list.back();
 	}
 
-	list _list;	
-
+	melist<bufbump> _list;
 }; 
+
+// a mmap-based pointer-bump memory
+// capable of growing indefinitely
+// reference-counts allocations
+// immediately returns memory to the system once there are no more references
+// each memory allocation is preceeded by a service data structure, 
+// therefore the class has a significant memory overhead: sizeof(void*) for every allocation
+// never uses heap-memory
+// TODO: implement alignment strategy
+class refbump
+{
+public:
+	refbump()
+	{
+	}
+
+private:
+};
 
 // std-style allocator needed for inteoperability with standard containers
 template <typename T, typename mem_t>
