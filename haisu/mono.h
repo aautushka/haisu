@@ -47,6 +47,42 @@ public:
 		int _cursor = 0;
 	};
 
+	class const_iterator
+	{
+	public:
+		using self = const_iterator;
+
+		const_iterator() {} 
+		explicit const_iterator(const stack& parent) : _parent(&parent) { }
+		const T& operator *() {return _parent->_stack[_cursor]; }
+		const T& operator *() const {return _parent->_stack[_cursor];}
+		self& operator ++() { ++_cursor; return *this; }
+		self operator ++(int) { self out(*this); ++(*this); return out;}
+		const T* operator ->() { return &**this; }
+		const T* operator ->() const {return &**this;}
+
+		bool operator !=(const self& other) const { return !(*this == other); }
+		bool operator ==(const self& other) const 
+		{
+			if (_parent && other._parent)
+			{
+				assert(_parent == other._parent);
+				return _cursor == other._cursor;
+			}
+
+			return end() && other.end();
+		}
+
+	private:
+		bool end() const
+		{
+			return !_parent || _cursor < 0 || _cursor >= _parent->size();
+		}
+
+		const stack* _parent = nullptr;
+		int _cursor = 0;
+	};
+
 	stack()
 	{
 		memset(_stack, 0, byte_capacity());
@@ -100,7 +136,7 @@ public:
 		_size += other._size;
 	}
 
-	bool operator <(const stack& other)
+	bool operator <(const stack& other) const
 	{
 		return 0 > memcmp(_stack, other._stack, sizeof(T) * capacity());
 	}
@@ -133,6 +169,26 @@ public:
 	iterator end() 
 	{
 		return iterator();
+	}
+
+	const_iterator cbegin() const
+	{
+		return const_iterator(*this);
+	}
+
+	const_iterator cend() const
+	{
+		return const_iterator();
+	}
+
+	const_iterator begin() const
+	{
+		return cbegin();
+	}
+
+	const_iterator end() const
+	{
+		return cend();
 	}
 
 	size_t size() const
@@ -192,20 +248,21 @@ private:
 };
 
 // overflow-tolerant stack, ignores everything what goes beyond the boundary
-template <typename T, int N>
+template <typename T, int N = 256>
 class overflow_stack
 {
 public:
 	using self_type = overflow_stack;
 	using iterator = typename stack<T, N>::iterator;
+	using const_iterator = typename stack<T, N>::const_iterator;
 
 	overflow_stack()
 	{
 	}
 
-	oveflow_stack(std::initializer_list<T> ll)
+	overflow_stack(std::initializer_list<T> ll)
 	{
-		for (auto l : ll) push_back(l);
+		for (auto l : ll) push(l);
 	}
 
 	void push(T t)
@@ -224,7 +281,7 @@ public:
 	{
 		if (overflow())
 		{
-			--overflow;
+			--_overflow;
 		}
 		else
 		{
@@ -234,7 +291,7 @@ public:
 
 	T top()
 	{
-		assert(_size > 0 && !overflow());
+		assert(_stack.size() > 0 && !overflow());
 		return _stack.top();
 	}
 	
@@ -280,19 +337,22 @@ public:
 		return _overflow > 0;
 	}
 	
-	bool operator ==(const self_type& other) const
+	template <int M>
+	bool operator ==(const overflow_stack<T, M>& other) const
 	{
 		// completely ignore the overflow part here
 		return _stack == other._stack;
 	}
 
-	bool operator !=(const self_type& other) const
+	template <int M>
+	bool operator !=(const overflow_stack<T, M>& other) const
 	{
 		// completely ignore the overflow part here
 		return _stack != other._stack;
 	}
 
-	bool operator <(const self_type& other) const
+	template <int M>
+	bool operator <(const overflow_stack<T, M>& other) const
 	{
 		// completely ignore the overflow part here
 		return _stack < other._stack;
@@ -303,12 +363,13 @@ public:
 		push(t);
 	}
 
-	void operator +=(self_type& other)
+	template <int M>
+	void operator +=(const overflow_stack<T, M>& other)
 	{
 		// TODO: not efficient
-		for (T t: other._stack)
+		for (auto i = other._stack.begin(); i != other._stack.end(); ++i)
 		{
-			push(t);
+			push(*i);
 		}
 
 		_overflow += other._overflow;
@@ -328,6 +389,8 @@ public:
 private:
 	stack<T, N> _stack;
 	int _overflow = 0;
+
+	template <typename U, int M> friend class overflow_stack;
 };
 
 } // namespace mono
