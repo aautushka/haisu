@@ -7,4 +7,5 @@ set(SRC
   tls
   memory
   intrusive
+  mono
 )
