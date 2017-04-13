@@ -153,6 +153,11 @@ public:
 		_refs = 0;
 	}
 
+	size_t refs() const
+	{
+		return _refs;
+	}
+
 private:
 	void reset()
 	{
@@ -282,6 +287,10 @@ public:
 		return node->data.man;
 	}
 
+	void erase(T& t)
+	{
+	}
+
 	T& front()
 	{
 		return _list.front().data.man;
@@ -301,12 +310,18 @@ public:
 	{
 		return _list.empty();
 	}
+
+	size_t size() const
+	{
+		return _list.size();
+	}
+
 private:
 
 	struct header
 	{
-		memap map;
 		T man;	
+		memap map;
 
 		header() {}
 		header(header&& other) : map(std::move(other.map)), man(std::move(other.man)) {} 
@@ -332,6 +347,9 @@ private:
 		// TODO: what if T is an integral type
 		node->data.man.assign(freemem, freesize);
 		node->data.map = std::move(map);
+
+		assert((void*)ptr == (void*)&node->data);
+		assert((void*)ptr == (void*)node);
 		
 		return node;
 	}
@@ -387,7 +405,7 @@ public:
 		return static_cast<T*>(res);
 	}
 
-	void free()
+	void free(void*)
 	{
 		// do not implement this methods
 		// the class is not capable of freeing memory
@@ -414,13 +432,81 @@ private:
 // TODO: implement alignment strategy
 class refbump
 {
+	using list_t = melist<bufbump>;
+	enum {BLOCK_SIZE = 4096 - list_t::overhead() - /*overhead()*/ sizeof(void*)};
+
 public:
-	refbump()
+	refbump(growbump&) = delete;
+	refbump operator =(refbump&) = delete;
+
+	refbump() 
 	{
+		_list.push_back(BLOCK_SIZE);
+	}
+
+	void* alloc(size_t size)
+	{
+		auto& man = back();
+		void** res = static_cast<void**>(man.alloc(size + overhead()));
+
+		if (nullptr == res)
+		{
+			if (size < BLOCK_SIZE)
+			{
+				// TODO: we might be wasting memory here when we prematurely push it to backlog
+				_list.push_back(BLOCK_SIZE);
+				return alloc(size);
+			}
+			else
+			{
+				auto& man = _list.push_front(size + overhead());
+				return man.alloc(size);
+			}
+		}
+
+		*res = &man;
+		return ++res;
+	}
+
+	template <typename T>
+	T* alloc()
+	{
+		void* res = alloc(sizeof(T));
+		return static_cast<T*>(res);
+	}
+
+	void free(void* ptr)
+	{
+		void* head = static_cast<void**>(ptr) - 1;
+		bufbump* mem = static_cast<bufbump*>(head);
+
+		mem->free(ptr);
+		if (mem->refs() == 0)
+		{
+			_list.erase(*mem);
+		}
+	}
+
+	// returns then number of mmap's allocated by this memory manager
+	size_t arena_count() const
+	{
+		return _list.size();
 	}
 
 private:
-};
+	static constexpr size_t overhead()
+	{
+		return sizeof(void*);
+	}
+
+
+	bufbump& back()
+	{
+		return _list.back();
+	}
+
+	list_t _list;
+}; 
 
 // std-style allocator needed for inteoperability with standard containers
 template <typename T, typename mem_t>

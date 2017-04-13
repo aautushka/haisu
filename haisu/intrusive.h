@@ -40,9 +40,9 @@ public:
 	{
 		node() : prev(nullptr), next(nullptr){}
 		node(T t) : data(std::move(t)){}
+		T data;
 		node* prev;
 		node* next;
-		T data;
 
 		operator T() const
 		{

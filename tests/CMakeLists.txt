@@ -14,6 +14,7 @@ set(SRC
   intrusive_list_tests
   list_tests
   growbump_tests
+  refbump_tests
 )
 
 add_executable(tests ${SRC})
