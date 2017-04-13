@@ -191,6 +191,145 @@ private:
 	template <typename U, int V> friend class stack;
 };
 
+// overflow-tolerant stack, ignores everything what goes beyond the boundary
+template <typename T, int N>
+class overflow_stack
+{
+public:
+	using self_type = overflow_stack;
+	using iterator = typename stack<T, N>::iterator;
+
+	overflow_stack()
+	{
+	}
+
+	oveflow_stack(std::initializer_list<T> ll)
+	{
+		for (auto l : ll) push_back(l);
+	}
+
+	void push(T t)
+	{
+		if (_stack.size() < _stack.capacity())
+		{
+			_stack.push(t);
+		}
+		else
+		{
+			++_overflow;
+		}
+	}
+
+	void pop()
+	{
+		if (overflow())
+		{
+			--overflow;
+		}
+		else
+		{
+			_stack.pop();
+		}
+	}
+
+	T top()
+	{
+		assert(_size > 0 && !overflow());
+		return _stack.top();
+	}
+	
+	size_t size()
+	{
+		return _stack.size() + _overflow;
+	}
+
+	bool empty()
+	{
+		return 0 == size();
+	}
+
+	static constexpr size_t capacity()
+	{
+		return N;
+	}
+
+	T& front()
+	{
+		return _stack.front();
+	}
+
+	const T& front() const
+	{
+		return _stack.front();
+	}
+
+	T& back()
+	{
+		assert(!overflow());
+		return _stack.back();
+	}
+
+	const T& back() const
+	{
+		assert(!overflow());
+		return _stack.back();
+	}
+
+	bool overflow() const
+	{
+		return _overflow > 0;
+	}
+	
+	bool operator ==(const self_type& other) const
+	{
+		// completely ignore the overflow part here
+		return _stack == other._stack;
+	}
+
+	bool operator !=(const self_type& other) const
+	{
+		// completely ignore the overflow part here
+		return _stack != other._stack;
+	}
+
+	bool operator <(const self_type& other) const
+	{
+		// completely ignore the overflow part here
+		return _stack < other._stack;
+	}
+
+	void operator +=(T t)
+	{
+		push(t);
+	}
+
+	void operator +=(self_type& other)
+	{
+		// TODO: not efficient
+		for (T t: other._stack)
+		{
+			push(t);
+		}
+
+		_overflow += other._overflow;
+	}
+
+	iterator begin()
+	{
+		assert(!overflow());
+		return _stack.begin();
+	}
+
+	iterator end()
+	{
+		return _stack.end();
+	}
+
+private:
+	stack<T, N> _stack;
+	int _overflow = 0;
+};
+
 } // namespace mono
 } // namespace haisu
 
