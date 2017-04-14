@@ -50,27 +50,26 @@ struct three_way_cmp<std::string>
 template <typename Container, typename Key, typename Cmp = three_way_cmp<Key>>
 size_t binary_search(const Container& container, Key key, Cmp cmp = Cmp())
 {
-	size_t head = 0;
-	size_t tail = container.size();
+	if (container.empty()) return npos;
 
-	while (head < tail)
+	int head = 0;
+	int tail = container.size() - 1;
+
+	while (head <= tail)
 	{
-		size_t mid = head + (tail - head) / 2;
-		if (mid != tail)
+		int mid = (head + tail) / 2;
+		const int res = cmp(key, container.at(mid));
+		if (res > 0)
 		{
-			const int res = cmp(key, container.at(mid));
-			if (res > 0)
-			{
-				head = mid + 1;
-			}
-			else if (res < 0)
-			{
-				tail = mid;
-			}
-			else
-			{
-				return mid;
-			}
+			head = mid + 1;
+		}
+		else if (res < 0)
+		{
+			tail = mid - 1;
+		}
+		else
+		{
+			return mid;
 		}
 	}
 		
