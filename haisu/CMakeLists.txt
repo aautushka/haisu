@@ -9,4 +9,5 @@ set(SRC
   intrusive
   mono
   tree
+  metric
 )
