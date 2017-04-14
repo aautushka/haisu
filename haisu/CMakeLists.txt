@@ -8,4 +8,5 @@ set(SRC
   memory
   intrusive
   mono
+  tree
 )

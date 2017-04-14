@@ -17,6 +17,7 @@ set(SRC
   refbump_tests
   mono_stack_tests
   overflow_stack_tests
+  tree_tests
 )
 
 add_executable(tests ${SRC})
