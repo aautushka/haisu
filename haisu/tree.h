@@ -13,24 +13,9 @@ public:
 	using self_type = tree<Key, Val>;
 	using value_type = Val;
 	using key_type = Key;
-	
-	class iterator
-	{
-	public:
-		iterator() {} 
-		explicit iterator(typename leaves_t::iterator i) : _it(i) { }
-		tree& operator *() {return **_it;}
-		const tree& operator *() const {return **_it;}
-		iterator& operator ++() {return ++_it;}
-		iterator operator ++(int) { return _it++;}
-		tree* operator ->() { return &**this; }
-		const tree* operator ->() const {return &**this;}
 
-		bool operator !=(const iterator& other) const { return _it != other._it; }
-		bool operator ==(const iterator& other) const { return _it == other._it; }
-	private:
-		typename leaves_t::iterator _it;
-	};
+	using iterator = typename leaves_t::iterator;
+	using const_iterator = typename leaves_t::const_iterator;
 
 	tree()
 	{
@@ -42,23 +27,23 @@ public:
 	template <typename T>
 	value_type& operator [](const T& key)
 	{
-		return child(key)->_val;
+		return child(key)->get();
 	}
 
 	template <typename T>
 	const value_type& operator [](const std::vector<key_type>& key) const
 	{
-		return child(key)->_val;
+		return child(key)->get();
 	}
 
 	value_type& operator [](const key_type& key)
 	{
-		return child(key)->_val;
+		return child(key)->get();
 	}
 
 	const value_type& operator [](const key_type& key) const
 	{
-		return child(key)->_val;
+		return child(key)->get();
 	}
 
 	void insert(const key_type& key, const value_type& val)
@@ -79,6 +64,36 @@ public:
 	iterator end()
 	{
 		return iterator(_leaves.end());
+	}
+
+	const_iterator begin() const
+	{
+		return _leaves.begin();
+	}
+
+	const_iterator end() const
+	{
+		return _leaves.end();
+	}
+
+	template <typename Func>
+	void foreach(Func func) const
+	{
+		for (auto i = begin(); i != end(); ++i)
+		{
+			func(i->first, i->second->get());	
+			i->second->foreach(func);
+		}
+	}
+
+	value_type& get()
+	{
+		return _val;
+	}
+
+	const value_type& get() const
+	{
+		return _val;
 	}
 
 private:

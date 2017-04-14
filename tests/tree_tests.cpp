@@ -55,3 +55,17 @@ TEST_F(tree_test, tree_is_no_longer_empty)
 	EXPECT_FALSE(tree.empty());
 }
 
+TEST_F(tree_test, recursively_iterates_over_tree)
+{
+	std::vector<std::pair<int, int>> actual; 
+	std::vector<std::pair<int, int>> expected = {{1, 2}, {3, 4}, {5, 6}};
+
+	using path = std::vector<int>;
+
+	tree[path{1}] = 2;
+	tree[path{1, 3}] = 4;
+	tree[path{1, 3, 5}] = 6;
+
+	tree.foreach([&](auto key, auto val){actual.push_back(std::make_pair(key, val));});
+	EXPECT_EQ(expected, actual);
+}
