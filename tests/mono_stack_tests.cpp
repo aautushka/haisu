@@ -139,3 +139,17 @@ TEST_F(mono_stack_test, iterates_over_stack)
 
 	EXPECT_EQ(expected, actual);
 }
+
+TEST_F(mono_stack_test, stack_is_not_full)
+{
+	stack.push(1);
+	EXPECT_FALSE(stack.full());
+}
+
+TEST_F(mono_stack_test, stack_is_full)
+{
+	haisu::mono::stack<int, 1> stack;
+	stack.push(1);
+	EXPECT_TRUE(stack.full());
+}
+

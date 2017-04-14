@@ -184,3 +184,20 @@ TEST_F(overflow_stack_test, switches_to_overflow_state_while_appending_other_sta
 	EXPECT_EQ(4, lhs.size());
 	EXPECT_TRUE(lhs.overflow());
 }
+TEST_F(overflow_stack_test, stack_is_not_full)
+{
+	stack.push(1);
+	EXPECT_FALSE(stack.full());
+}
+
+TEST_F(overflow_stack_test, stack_is_full)
+{
+	haisu::mono::overflow_stack<int, 1> stack;
+
+	stack.push(1);
+	EXPECT_TRUE(stack.full());
+
+	stack.push(2);
+	EXPECT_TRUE(stack.full());
+}
+

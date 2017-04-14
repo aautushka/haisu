@@ -230,6 +230,11 @@ public:
 		return _stack[_size - 1];
 	}
 
+	bool full() const
+	{
+		return _size == capacity();
+	}
+
 private:
 	size_t left() const
 	{
@@ -295,7 +300,7 @@ public:
 		return _stack.top();
 	}
 	
-	size_t size()
+	size_t size() const
 	{
 		return _stack.size() + _overflow;
 	}
@@ -335,6 +340,11 @@ public:
 	bool overflow() const
 	{
 		return _overflow > 0;
+	}
+
+	bool full() const
+	{
+		return size() >= capacity();
 	}
 	
 	template <int M>
