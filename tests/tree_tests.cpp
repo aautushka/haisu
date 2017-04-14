@@ -5,6 +5,7 @@
 struct tree_test : ::testing::Test
 {
 	haisu::tree<int, int> tree;
+	using path = std::vector<int>;
 };
 
 TEST_F(tree_test, assignes_tree_root)
@@ -60,8 +61,6 @@ TEST_F(tree_test, recursively_iterates_over_tree)
 	std::vector<std::pair<int, int>> actual; 
 	std::vector<std::pair<int, int>> expected = {{1, 2}, {3, 4}, {5, 6}};
 
-	using path = std::vector<int>;
-
 	tree[path{1}] = 2;
 	tree[path{1, 3}] = 4;
 	tree[path{1, 3, 5}] = 6;
@@ -69,3 +68,66 @@ TEST_F(tree_test, recursively_iterates_over_tree)
 	tree.foreach([&](auto key, auto val){actual.push_back(std::make_pair(key, val));});
 	EXPECT_EQ(expected, actual);
 }
+
+TEST_F(tree_test, counts_existing_element)
+{
+	tree[1] = 2;
+
+	EXPECT_EQ(1, tree.count(1));
+}
+
+TEST_F(tree_test, counts_existing_element_on_a_branch)
+{
+	tree[path{1, 2, 3}] = 4;
+
+	EXPECT_EQ(1, tree.count(path{1, 2, 3}));
+}
+
+TEST_F(tree_test, counts_non_existant_elements)
+{
+	EXPECT_EQ(0, tree.count(1));
+	EXPECT_EQ(0, tree.count(path{1, 2, 3}));
+}
+
+TEST_F(tree_test, erases_leaf)
+{
+	tree[1] = 2;
+	tree.erase(1);
+
+	EXPECT_EQ(0, tree.count(1));
+}
+
+TEST_F(tree_test, does_not_touch_parent_nodes_when_erasing_element)
+{
+	tree[path{1, 2, 3}] = 4;
+	tree.erase(path{1, 2, 3});
+
+	EXPECT_EQ(0, tree.count(path{1, 2, 3}));
+	EXPECT_EQ(1, tree.count(path{1, 2}));
+}
+
+TEST_F(tree_test, removes_whole_branch)
+{
+	tree[path{1, 2, 3}] = 4;
+	tree.erase(1);
+
+	EXPECT_EQ(0, tree.count(path{1, 2, 3}));
+	EXPECT_EQ(0, tree.count(path{1, 2}));
+	EXPECT_EQ(0, tree.count(1));
+}
+
+TEST_F(tree_test, clears_whole_tree)
+{
+	tree[1] = 2;
+	tree.clear();
+
+	EXPECT_EQ(0, tree.count(1));
+}
+
+TEST_F(tree_test, count_number_of_tree_nodes)
+{
+	tree[path{1, 2, 3}] = 4;
+
+	EXPECT_EQ(3, tree.size());
+}
+

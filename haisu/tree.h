@@ -96,6 +96,59 @@ public:
 		return _val;
 	}
 
+	template <typename T> 
+	size_t count(const T& key) const
+	{
+		return find(key) ? 1 : 0;
+	}
+
+	void erase(const key_type& key)
+	{
+		_leaves.erase(key);
+	}
+
+	template <typename T> 
+	void erase(const T& key)
+	{
+		tree* child = this;
+		tree* parent = this;
+		key_type leaf;
+		for (auto k: key)
+		{
+			if (child != parent)
+			{
+				parent = child;
+			}
+
+			auto i = parent->_leaves.find(k);
+			if (i == parent->_leaves.end())
+			{
+				// can't find a node to remove
+				return;
+			}
+			else
+			{
+				child = i->second.get();
+				leaf = k;
+			}
+		}
+
+		parent->erase(leaf);
+	}
+
+	void clear()
+	{
+		_leaves.clear();
+		_val = value_type();
+	}
+
+	size_t size() const
+	{
+		size_t sum = 0;
+		foreach([&](auto, auto) { ++sum; });
+		return sum;
+	}
+
 private:
 	// TODO: gls::not_null
 	tree* child(const key_type& key)
@@ -142,6 +195,32 @@ private:
 		self_type* tr = this;
 		for (auto k : key) tr = tr->child(k);
 		return tr;
+	}
+
+	template <typename T> 
+	const tree* find(T& key) const
+	{
+		const self_type* tr = this;
+		for (auto k: key)
+		{
+			auto i = tr->_leaves.find(k);
+			if (i != tr->_leaves.end())
+			{
+				tr = i->second.get();
+			}
+			else
+			{
+				return nullptr;
+			}
+		}
+
+		return tr;
+	}
+
+	self_type* find(const key_type& key) const
+	{
+		auto i = _leaves.find(key);
+		return i == _leaves.end() ? nullptr : i->second.get();
 	}
 
 	value_type _val;
