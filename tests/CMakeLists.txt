@@ -18,6 +18,8 @@ set(SRC
   mono_stack_tests
   overflow_stack_tests
   tree_tests
+  metric_table_tests
+  metric_monitor_tests
 )
 
 add_executable(tests ${SRC})

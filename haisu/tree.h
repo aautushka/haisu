@@ -24,6 +24,17 @@ public:
 	tree(const tree& other) = delete;
 	tree& operator =(const tree& other) = delete;
 
+	tree(tree&& other)
+	{
+		*this = std::move(other);
+	}
+
+	tree& operator =(tree&& other)
+	{
+		_val = std::move(other._val);
+		_leaves = std::move(other._leaves);
+	}
+
 	template <typename T>
 	value_type& operator [](const T& key)
 	{

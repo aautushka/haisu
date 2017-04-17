@@ -396,6 +396,27 @@ public:
 		return _stack.end();
 	}
 
+	const_iterator begin() const
+	{
+		assert(!overflow());
+		return _stack.begin();
+	}
+
+	const_iterator end() const
+	{
+		return _stack.end();
+	}
+
+	const_iterator cbegin() const
+	{
+		return begin();
+	}
+
+	const_iterator cend() const
+	{
+		return end();
+	}
+
 private:
 	stack<T, N> _stack;
 	int _overflow = 0;
