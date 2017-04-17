@@ -44,7 +44,10 @@ public:
 	template <typename T>
 	void erase(size_t index)
 	{
-		memmove(&buf[index* sizeof(T)], &buf[(index + 1)* sizeof(T)], buf.size() - sizeof(T));
+		const auto dest = index * sizeof(T);
+		const auto src = dest + sizeof(T);
+		const auto size = buf.size() - src;
+		memmove(&buf[dest], &buf[src], size);
 		buf.resize(buf.size() - sizeof(T));
 	}
 
