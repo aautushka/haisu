@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <limits>
 
 namespace haisu
 {
@@ -12,6 +13,7 @@ class stack
 {
 public:
 	static_assert(std::is_integral<T>::value, "integral type required");
+	static_assert(N <= std::numeric_limits<T>::max(), "");
 
 	class iterator
 	{
@@ -111,9 +113,14 @@ public:
 	{
 		if (_size == other._size)
 		{
-			return 0 == memcmp(_stack, other._stack, byte_capacity());
+			return 0 == memcmp(_stack, other._stack, _size * sizeof(T));
 		}
 		return false;
+	}
+
+	bool operator ==(const stack& other) const
+	{
+		return 0 == memcmp(this, &other, byte_capacity());
 	}
 
 	template <int U>
@@ -138,7 +145,7 @@ public:
 
 	bool operator <(const stack& other) const
 	{
-		return 0 > memcmp(_stack, other._stack, sizeof(T) * capacity());
+		return 0 > memcmp(_stack, other._stack, byte_capacity());
 	}
 
 	T top() const
@@ -246,11 +253,13 @@ private:
 		return capacity() * sizeof(T);
 	}
 
+	T _size = 0;
 	T _stack[N];
-	int _size = 0;
 
 	template <typename U, int V> friend class stack;
 };
+
+static_assert(sizeof(stack<char, 15>) == 16, "the structure must be tightly packed"); 
 
 // overflow-tolerant stack, ignores everything what goes beyond the boundary
 template <typename T, int N = 256>
