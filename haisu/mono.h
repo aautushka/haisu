@@ -152,7 +152,7 @@ public:
 	{
 		assert(_size > 0);
 
-		_stack[_size--] = 0;
+		_stack[--_size] = 0;
 	}
 
 	void push(T t)
