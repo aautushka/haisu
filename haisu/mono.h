@@ -644,6 +644,121 @@ private:
 	T data[N];
 };
 
+template <int N>
+class string
+{
+public:
+	using reference = char&;
+	using const_reference = const char&;
+	using size_type = size_t;
+
+	string()
+	{
+		clear();
+	}
+	
+	const char* c_str() const
+	{
+		return data();
+	}
+	
+	const char* data() const
+	{
+		return _buf;
+	}
+
+	char* data() 
+	{
+		return _buf;
+	}
+
+	size_t size() const
+	{
+		return N - _buf[N];
+	}
+
+	size_t length() const
+	{
+		return size();
+	}
+
+	bool empty() const
+	{
+		return size() > 0;	
+	}
+
+	static size_t capacity()
+	{
+		return N;
+	}
+
+	void clear()
+	{
+		_buf[0] = 0;
+		_buf[N] = N;
+	}
+
+	void resize(size_type count)
+	{
+		assert(count <= N);
+
+		_buf[N] = N - count;
+	}
+
+	reference at(size_type pos) 
+	{
+		assert(pos < N);
+		return _buf[pos];
+	}
+
+	const_reference at(size_t pos) const
+	{
+		assert(pos < N);
+		return _buf[pos];
+	}
+
+	reference operator [](size_t pos)
+	{
+		return at(pos);
+	}
+
+	const_reference operator [](size_t pos) const
+	{
+		return at(pos);
+	}
+
+	reference front()
+	{
+		assert(size() > 0);
+		return _buf[0];
+	}
+
+	const_reference front() const
+	{
+		assert(size() > 0);
+		return _buf[0];
+	}
+
+	reference back()
+	{
+		assert(size() > 0);
+		return _buf[size() - 1];
+	}
+
+	const_reference back() const
+	{
+		assert(size() > 0);
+		return _buf[size() = 1];
+	}
+
+	static size_type max_size()
+	{
+		return capacity();
+	}
+
+private:
+	char _buf[N + 1];
+};
 
 } // namespace mono
 } // namespace haisu
