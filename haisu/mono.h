@@ -652,60 +652,60 @@ public:
 	using const_reference = const char&;
 	using size_type = size_t;
 
-	string()
+	constexpr string()
 	{
 		clear();
 	}
 
-	string(size_type count, char ch)
+	constexpr string(size_type count, char ch)
 	{
 		assign(count, ch);
 	}
 
-	string(const string& str)
+	constexpr string(const string& str)
 	{
 		assign(str);
 	}
 
 	template <int M>
-	string(const string<M>& str)
+	constexpr string(const string<M>& str)
 	{
 		assign(str._buf, str.size());
 	}
 
-	string& operator =(const string& str)
+	constexpr string& operator =(const string& str)
 	{
 		return assign(str);
 	}
 
 	template <int M>
-	string& operator =(const string<M>& str)
+	constexpr string& operator =(const string<M>& str)
 	{
 		return assign(str._buf, str.size());
 	}
 
-	string& operator =(const char* str)
+	constexpr string& operator =(const char* str)
 	{
 		return assign(str);
 	}
 
-	string& operator =(char ch)
+	constexpr string& operator =(char ch)
 	{
 		_buf[0] = ch;
 		resize(1);
 	}
 
-	string(const char* str, size_type count)
+	constexpr string(const char* str, size_type count)
 	{
 		assign(str, count);
 	}
 
-	string(const char* str)
+	constexpr string(const char* str)
 	{
 		assign(str);
 	}
 
-	string& assign(size_type count, char ch)
+	constexpr string& assign(size_type count, char ch)
 	{
 		assert(count <= N);
 		memset(_buf, ch, count);
@@ -714,19 +714,19 @@ public:
 		return *this;
 	}
 
-	string& assign(const string& str)
+	constexpr string& assign(const string& str)
 	{
 		memcpy(_buf, str._buf, capacity());
 		return *this;
 	}
 
 	template <int M>
-	string& assign(const string<M>& str)
+	constexpr string& assign(const string<M>& str)
 	{
 		assign(str._buf, str.size());
 	}
 
-	string& assign(const char* str, size_type count)
+	constexpr string& assign(const char* str, size_type count)
 	{
 		assert(count <= N);
 		memcpy(_buf, str, count);
@@ -734,53 +734,53 @@ public:
 		return *this;
 	}
 
-	string& assign(const char* str)
+	constexpr string& assign(const char* str)
 	{
 		return assign(str, strlen(str));
 	}
 	
-	const char* c_str() const
+	constexpr const char* c_str() const
 	{
 		return data();
 	}
 	
-	const char* data() const
+	constexpr const char* data() const
 	{
 		return _buf;
 	}
 
-	char* data() 
+	constexpr char* data() 
 	{
 		return _buf;
 	}
 
-	size_t size() const
+	constexpr size_t size() const
 	{
 		return N - _buf[N];
 	}
 
-	size_t length() const
+	constexpr size_t length() const
 	{
 		return size();
 	}
 
-	bool empty() const
+	constexpr bool empty() const
 	{
 		return size() == 0;	
 	}
 
-	static size_t capacity()
+	constexpr static size_t capacity()
 	{
 		return N;
 	}
 
-	void clear()
+	constexpr void clear()
 	{
 		_buf[0] = 0;
 		_buf[N] = N;
 	}
 
-	void resize(size_type count)
+	constexpr void resize(size_type count)
 	{
 		assert(count <= N);
 
@@ -788,58 +788,58 @@ public:
 		_buf[count] = 0;
 	}
 
-	reference at(size_type pos) 
+	constexpr reference at(size_type pos) 
 	{
 		assert(pos < N);
 		return _buf[pos];
 	}
 
-	const_reference at(size_t pos) const
+	constexpr const_reference at(size_t pos) const
 	{
 		assert(pos < N);
 		return _buf[pos];
 	}
 
-	reference operator [](size_t pos)
+	constexpr reference operator [](size_t pos)
 	{
 		return at(pos);
 	}
 
-	const_reference operator [](size_t pos) const
+	constexpr const_reference operator [](size_t pos) const
 	{
 		return at(pos);
 	}
 
-	reference front()
+	constexpr reference front()
 	{
 		assert(size() > 0);
 		return _buf[0];
 	}
 
-	const_reference front() const
+	constexpr const_reference front() const
 	{
 		assert(size() > 0);
 		return _buf[0];
 	}
 
-	reference back()
+	constexpr reference back()
 	{
 		assert(size() > 0);
 		return _buf[size() - 1];
 	}
 
-	const_reference back() const
+	constexpr const_reference back() const
 	{
 		assert(size() > 0);
 		return _buf[size() = 1];
 	}
 
-	static size_type max_size()
+	constexpr static size_type max_size()
 	{
 		return capacity();
 	}
 
-	string& append(size_type count, char ch)
+	constexpr string& append(size_type count, char ch)
 	{
 		const size_type sz = size();
 
@@ -849,12 +849,12 @@ public:
 	}
 
 	template <int M>
-	string& append(const string<M>& str)
+	constexpr string& append(const string<M>& str)
 	{
 		append(str._buf, str.size());
 	}
 
-	string& append(const char* str, size_type count)
+	constexpr string& append(const char* str, size_type count)
 	{
 		const size_type sz = size();
 
@@ -864,85 +864,85 @@ public:
 		return (*this);
 	}
 
-	string& append(const char* str)
+	constexpr string& append(const char* str)
 	{
 		return append(str, strlen(str));
 	}
 
-	size_type free_capacity() const
+	constexpr size_type free_capacity() const
 	{
 		return capacity() - size();
 	}
 
-	string& operator +=(const string& str)
+	constexpr string& operator +=(const string& str)
 	{
 		return append(str);
 	}
 
-	string& operator +=(char ch)
+	constexpr string& operator +=(char ch)
 	{
 		return append(1, ch);
 	}
 
-	void push_back(char ch)
+	constexpr void push_back(char ch)
 	{
 		append(1, ch);
 	}
 
-	void pop_back()
+	constexpr void pop_back()
 	{
 		assert(!empty());
 		resize(size() - 1);
 	}
 
 	template <int M>
-	int compare(const string<M>& str) const
+	constexpr int compare(const string<M>& str) const
 	{
 		return strcmp(_buf, str._buf);
 	}
 
-	int compare(const char* str) const
+	constexpr int compare(const char* str) const
 	{
 		return strcmp(_buf, str);
 	}
 
 	template <int M>
-	bool operator ==(const string<M>& str) const
+	constexpr bool operator ==(const string<M>& str) const
 	{
 		return 0 == compare(str);
 	}
 
 	template <int M>
-	bool operator !=(const string<M>& str) const
+	constexpr bool operator !=(const string<M>& str) const
 	{
 		return 0 != compare(str);
 	}
 
 	template <int M>
-	bool operator <(const string<M>& str) const
+	constexpr bool operator <(const string<M>& str) const
 	{
 		return compare(str) < 0;
 	}
 
 	template <int M>
-	bool operator >(const string<M>& str) const
+	constexpr bool operator >(const string<M>& str) const
 	{
 		return compare(str) > 0;
 	}
 
 	template <int M>
-	bool operator <=(const string<M>& str) const
+	constexpr bool operator <=(const string<M>& str) const
 	{
 		return compare(str) <= 0;
 	}
 
 	template <int M>
-	bool operator >=(const string<M>& str) const
+	constexpr bool operator >=(const string<M>& str) const
 	{
 		return compare(str) >= 0;
 	}
 
-	string& erase(size_type index = 0, size_type count = npos)
+	constexpr string& erase(size_type index = 0, size_type count = npos)
 	{
 		throw std::exception();
 	}
