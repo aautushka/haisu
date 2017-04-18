@@ -656,6 +656,88 @@ public:
 	{
 		clear();
 	}
+
+	string(size_type count, char ch)
+	{
+		assign(count, ch);
+	}
+
+	string(const string& str)
+	{
+		assign(str);
+	}
+
+	template <int M>
+	string(const string<M>& str)
+	{
+		assign(str._buf, str.size());
+	}
+
+	string& operator =(const string& str)
+	{
+		return assign(str);
+	}
+
+	template <int M>
+	string& operator =(const string<M>& str)
+	{
+		return assign(str._buf, str.size());
+	}
+
+	string& operator =(const char* str)
+	{
+		return assign(str);
+	}
+
+	string& operator =(char ch)
+	{
+		_buf[0] = ch;
+		resize(1);
+	}
+
+	string(const char* str, size_type count)
+	{
+		assign(str, count);
+	}
+
+	string(const char* str)
+	{
+		assign(str);
+	}
+
+	string& assign(size_type count, char ch)
+	{
+		assert(count <= N);
+		memset(_buf, ch, count);
+		resize(count);
+
+		return *this;
+	}
+
+	string& assign(const string& str)
+	{
+		memcpy(_buf, str._buf, capacity());
+		return *this;
+	}
+
+	template <int M>
+	string& assign(const string<M>& str)
+	{
+		assign(str._buf, str.size());
+	}
+
+	string& assign(const char* str, size_type count)
+	{
+		assert(count <= N);
+		memcpy(_buf, str, count);
+		resize(count);
+		return *this;
+	}
+
+	string& assign(const char* str)
+	{
+		return assign(str, strlen(str));
+	}
 	
 	const char* c_str() const
 	{
@@ -684,7 +766,7 @@ public:
 
 	bool empty() const
 	{
-		return size() > 0;	
+		return size() == 0;	
 	}
 
 	static size_t capacity()
@@ -703,6 +785,7 @@ public:
 		assert(count <= N);
 
 		_buf[N] = N - count;
+		_buf[count] = 0;
 	}
 
 	reference at(size_type pos) 
@@ -756,9 +839,124 @@ public:
 		return capacity();
 	}
 
+	string& append(size_type count, char ch)
+	{
+		const size_type sz = size();
+
+		assert(sz + count <= N);
+		memset(_buf + sz, ch, count);
+		resize(sz + count);
+	}
+
+	template <int M>
+	string& append(const string<M>& str)
+	{
+		append(str._buf, str.size());
+	}
+
+	string& append(const char* str, size_type count)
+	{
+		const size_type sz = size();
+
+		assert(sz + count <= N);
+		memcpy(_buf + sz, str, count);
+		resize(sz + count);
+		return (*this);
+	}
+
+	string& append(const char* str)
+	{
+		return append(str, strlen(str));
+	}
+
+	size_type free_capacity() const
+	{
+		return capacity() - size();
+	}
+
+	string& operator +=(const string& str)
+	{
+		return append(str);
+	}
+
+	string& operator +=(char ch)
+	{
+		return append(1, ch);
+	}
+
+	void push_back(char ch)
+	{
+		append(1, ch);
+	}
+
+	void pop_back()
+	{
+		assert(!empty());
+		resize(size() - 1);
+	}
+
+	template <int M>
+	int compare(const string<M>& str) const
+	{
+		return strcmp(_buf, str._buf);
+	}
+
+	int compare(const char* str) const
+	{
+		return strcmp(_buf, str);
+	}
+
+	template <int M>
+	bool operator ==(const string<M>& str) const
+	{
+		return 0 == compare(str);
+	}
+
+	template <int M>
+	bool operator !=(const string<M>& str) const
+	{
+		return 0 != compare(str);
+	}
+
+	template <int M>
+	bool operator <(const string<M>& str) const
+	{
+		return compare(str) < 0;
+	}
+
+	template <int M>
+	bool operator >(const string<M>& str) const
+	{
+		return compare(str) > 0;
+	}
+
+	template <int M>
+	bool operator <=(const string<M>& str) const
+	{
+		return compare(str) <= 0;
+	}
+
+	template <int M>
+	bool operator >=(const string<M>& str) const
+	{
+		return compare(str) >= 0;
+	}
+
+	string& erase(size_type index = 0, size_type count = npos)
+	{
+		throw std::exception();
+	}
+
 private:
 	char _buf[N + 1];
+	static const size_type npos = std::string::npos;
 };
+
+template <int N>
+std::ostream& operator <<(std::ostream& stream, const string<N>& str)
+{
+	return stream << str.c_str();
+}
 
 } // namespace mono
 } // namespace haisu
