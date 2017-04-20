@@ -5,6 +5,12 @@ struct mono_string_test : ::testing::Test
 {
 	using string = haisu::mono::string<15>;
 	string str;
+	string hello_world;
+
+	mono_string_test()
+	{
+		hello_world.assign("hello world");
+	}
 };
 
 TEST_F(mono_string_test, creates_empty_stack)
@@ -191,4 +197,83 @@ TEST_F(mono_string_test, alters_chars_accessed_by_index)
 	str.at(2) = 'l';
 
 	EXPECT_EQ(string("mild"), str);
+}
+
+TEST_F(mono_string_test, assigns_substring)
+{
+	string other("hello world");
+	str.assign(other, 1, 4);
+
+	EXPECT_EQ(string("ello"), str);
+}
+
+TEST_F(mono_string_test, the_requested_size_may_point_well_past_beyond_the_end_but_this_is_fine)
+{
+	string other("hello world");
+	str.assign(other, 1, 1000);
+
+	EXPECT_EQ(string("ello world"), str);
+}
+
+TEST_F(mono_string_test, assignes_to_the_end_of_the_string_by_default)
+{
+	string other("hello world");
+	str.assign(other, 1);
+
+	EXPECT_EQ(string("ello world"), str);
+}
+
+TEST_F(mono_string_test, substrings_string)
+{
+	EXPECT_EQ(string("ello"), hello_world.substr(1, 4));
+	EXPECT_EQ(string("ello world"), hello_world.substr(1));
+}
+
+TEST_F(mono_string_test, copies_substring_to_buffer)
+{
+	char buffer[16] = {0};
+
+	hello_world.copy(buffer, 4, 1);
+	EXPECT_STREQ("ello", buffer);
+	
+	hello_world.copy(buffer, 5);
+	EXPECT_STREQ("hello", buffer);
+
+}
+
+TEST_F(mono_string_test, copy_returns_the_number_of_copied_chars)
+{
+	char buffer[16] = {0};
+	EXPECT_EQ(5, hello_world.copy(buffer, 5));
+}
+
+TEST_F(mono_string_test, erases_substring)
+{
+	EXPECT_EQ(string(), string("hello world").erase());
+	EXPECT_EQ(string("world"), string("hello world").erase(0, 6));
+	EXPECT_EQ(string("hello"), string("hello world").erase(5));
+}
+
+TEST_F(mono_string_test, searches_for_substring)
+{
+	EXPECT_EQ(string::npos, hello_world.find("foobar"));
+	EXPECT_EQ(6, hello_world.find("world"));
+	EXPECT_EQ(6, hello_world.find("world", 6));
+	EXPECT_EQ(string::npos, hello_world.find("world", 7));
+}
+
+TEST_F(mono_string_test, searches_for_a_character)
+{
+	EXPECT_EQ(string::npos, hello_world.find('z'));
+	EXPECT_EQ(6, hello_world.find('w'));
+	EXPECT_EQ(6, hello_world.find('w', 6));
+	EXPECT_EQ(string::npos, hello_world.find('w', 7));
+}
+
+TEST_F(mono_string_test, searches_for_substring_with_explicit_length)
+{
+	EXPECT_EQ(string::npos, hello_world.find("foobar", 0, 6));
+	EXPECT_EQ(6, hello_world.find("world!", 0, 5));
+	EXPECT_EQ(6, hello_world.find("world!", 6, 5));
+	EXPECT_EQ(string::npos, hello_world.find("world!", 7, 5));
 }

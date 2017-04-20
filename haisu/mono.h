@@ -679,6 +679,12 @@ public:
 	}
 
 	template <int M>
+	constexpr string(const string<M>& str, size_type pos, size_type count = npos)
+	{
+		assign(str, pos, count);
+	}
+
+	template <int M>
 	constexpr string& operator =(const string<M>& str)
 	{
 		return assign(str._buf, str.size());
@@ -731,6 +737,19 @@ public:
 		assert(count <= N);
 		memcpy(_buf, str, count);
 		resize(count);
+		return *this;
+	}
+
+	template <int M>
+	constexpr string& assign(const string<M>& str, size_t pos, size_t count = npos)
+	{
+		assert(pos < str.size());
+
+		size_t sz = std::min(count, str.size() - pos);
+
+		assert(sz <= N);
+		assign(str._buf + pos, sz);
+		
 		return *this;
 	}
 
@@ -944,13 +963,78 @@ public:
 
 	constexpr string& erase(size_type index = 0, size_type count = npos)
 	{
-		throw std::exception();
+		assert(index <= size());
+		const size_type cur_size = size();
+		const size_type erase_size = std::min(count, cur_size - index);	
+		const size_type erase_end = index + erase_size;
+		const size_type leftover = cur_size - erase_end;
+		memmove(_buf + index, _buf + erase_end, leftover);
+		resize(cur_size - erase_size);
+		return *this;
 	}
+
+	constexpr string substr(size_type pos = 0, size_type count = npos)
+	{
+		assert(pos <= size());
+		
+		return string(_buf + pos, std::min(count, size() - pos));		
+	}
+
+	size_type copy(char* dest, size_type count, size_type pos = 0) const
+	{
+		assert(pos <= size());
+
+		const size_t sz = std::min(size() - pos, count);
+		memcpy(dest, _buf + pos, sz); 
+
+		return sz;
+	}
+
+	template <int M>
+	size_type find(const string<M>& str, size_type pos = 0) const
+	{
+		return find(str._buf, pos);	
+	}
+
+	size_type find(const char* str, size_type pos, size_type count) const
+	{
+		assert(pos <= size());
+		const void* found = memmem(_buf + pos, size(), str, count);
+		return found ? static_cast<const char*>(found) - _buf : npos;
+	}
+
+	size_type find(const char* str, size_type pos = 0) const
+	{
+		assert(pos <= size());
+		const char* found = strstr(_buf + pos, str);
+		return found ? found - _buf : npos;
+	}
+
+	size_type find(char ch, size_type pos = 0) const
+	{
+		assert(pos <= size());
+		const char* found = strchr(_buf + pos, ch);
+		return found ? found - _buf : npos;
+	}
+	
+	// TODO: insert
+	// TODO: replace
+	// TODO: rfind
+	// TODO: find_first_of
+	// TODO: find_first_not_of
+	// TODO: find_last_of
+	// TODO: find_last_no_of
+	// TODO: iterators
+
+	enum constants : size_type {
+		npos = std::string::npos
+	};
 
 private:
 	char _buf[N + 1];
-	static const size_type npos = std::string::npos;
 };
+
+static_assert(16 == sizeof(string<15>), "too big overhead");
 
 template <int N>
 std::ostream& operator <<(std::ostream& stream, const string<N>& str)
