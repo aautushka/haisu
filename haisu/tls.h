@@ -15,18 +15,6 @@ namespace haisu
 {
 
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value, T>::type nil_value()
-{
-	return 0;
-}
-
-template <typename T>
-typename std::enable_if<!std::is_integral<T>::value, T>::type nil_value()
-{
-	return T();
-}
-
-template <typename T>
 struct direct_hash
 {
 	constexpr T operator ()(T t) const { return t; }
@@ -40,6 +28,20 @@ struct amiga_hash
 		return t * 0xdeece66d + 0xb;
 	}
 };
+
+namespace mono
+{
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type nil_value()
+{
+	return 0;
+}
+
+template <typename T>
+typename std::enable_if<!std::is_integral<T>::value, T>::type nil_value()
+{
+	return T();
+}
 
 // thread-safe fixed-length linear-probing open addressing hash table 
 // can't grow, can't rehash
@@ -174,6 +176,7 @@ private:
 	const Key _nil;
 	size_t _size;
 };
+} // namespace mono
 
 // this is a thread local storage implemented on top of a hash container
 // the problem with the regular thread_local is its lifespan,
@@ -276,7 +279,7 @@ private:
 		return _hash[get_thread_id()];
 	}
 
-	linear_hash<int32_t, T*, N> _hash;  
+	mono::linear_hash<int32_t, T*, N> _hash;  
 };
 } // namespace haisu 
 

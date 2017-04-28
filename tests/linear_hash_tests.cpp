@@ -4,7 +4,7 @@
 
 struct linear_hash_test : ::testing::Test
 {
-	using hash_t = haisu::linear_hash<int, int, 3>;
+	using hash_t = haisu::mono::linear_hash<int, int, 3>;
 	hash_t hash;
 };
 
