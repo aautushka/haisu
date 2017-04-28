@@ -277,3 +277,33 @@ TEST_F(mono_string_test, searches_for_substring_with_explicit_length)
 	EXPECT_EQ(6, hello_world.find("world!", 6, 5));
 	EXPECT_EQ(string::npos, hello_world.find("world!", 7, 5));
 }
+
+TEST_F(mono_string_test, inserts_string)
+{
+	EXPECT_EQ(string("hello world"), string("hello").insert(5, " world"));
+	EXPECT_EQ(string("hello world"), string("world").insert(0, "hello "));
+	EXPECT_EQ(string("hello world"), string("helloworld").insert(5, " ", 1));
+
+	haisu::mono::string<5> str;
+	EXPECT_EQ(string("hello"), str.insert(0, "hello"));
+}
+
+TEST_F(mono_string_test, inserts_set_of_chars)
+{
+	EXPECT_EQ(string("hello wwwww"), string("hello ").insert(6, 5, 'w'));
+	EXPECT_EQ(string("hhhhh world"), string(" world").insert(0, 5, 'h'));
+	EXPECT_EQ(string("hello world"), string("helloworld").insert(5, 1, ' '));
+
+	haisu::mono::string<5> str;
+	EXPECT_EQ(string("xxxxx"), str.insert(0, 5, 'x'));
+}
+
+TEST_F(mono_string_test, inserts_substring)
+{
+	string hello("hello");
+	string world("world");
+	string helloworld("helloworld");
+
+	EXPECT_EQ(hello_world, hello.insert(5, hello_world, 5)); 
+	EXPECT_EQ(hello_world, world.insert(0, hello_world, 0, 6)); 
+}

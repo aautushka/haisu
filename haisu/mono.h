@@ -973,7 +973,7 @@ public:
 		return *this;
 	}
 
-	constexpr string substr(size_type pos = 0, size_type count = npos)
+	constexpr string substr(size_type pos = 0, size_type count = npos) const
 	{
 		assert(pos <= size());
 		
@@ -1016,8 +1016,54 @@ public:
 		const char* found = strchr(_buf + pos, ch);
 		return found ? found - _buf : npos;
 	}
+
+	string& insert(size_type index, size_type count, char ch)
+	{
+		assert(size() + count <= N);
+
+		char* const rhs = _buf + index;
+		memmove(rhs + count, rhs, size() - index);
+		memset(rhs, ch, count);
+		resize(size() + count);
+
+
+		return *this;
+	}
+
+	string& insert(size_type index, const char* str)
+	{
+		return insert(index, str, strlen(str));
+	}
+
+	string& insert(size_type index, const char* str, size_type count)
+	{
+		assert(size() + count <= N);
+
+		char* const rhs = _buf + index;
+		memmove(rhs + count, rhs, size() - index);
+		memcpy(rhs, str, count);
+		resize(size() + count);
+
+		return *this;
+	}
+
+	template <int M>
+	string& insert(size_type index, const string<M>& str)
+	{
+		return insert(index, str.c_str(), str.size());
+	}
+
+	template <int M>
+	string& insert(size_type index, const string<M>& str, size_type index_str, size_type count = npos)
+	{
+		assert(index_str <= str.size());
+
+		const size_type max_insert_count = str.size() - index_str;
+		const size_type effective_count = std::min(count, max_insert_count);
+
+		return insert(index, str._buf + index_str, effective_count);
+	}
 	
-	// TODO: insert
 	// TODO: replace
 	// TODO: rfind
 	// TODO: find_first_of
@@ -1032,6 +1078,8 @@ public:
 
 private:
 	char _buf[N + 1];
+
+	template <int M> friend class string;
 };
 
 static_assert(16 == sizeof(string<15>), "too big overhead");
