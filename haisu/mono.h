@@ -3,6 +3,8 @@
 #include <type_traits>
 #include <limits>
 
+#include "algo.h"
+
 namespace haisu
 {
 namespace mono
@@ -1104,8 +1106,43 @@ public:
 		
 		return *this;
 	}
+
+	template <int M>
+	size_type rfind(const string<M>& str, size_type pos = npos) const
+	{
+		return rfind(str._buf, pos, str.size());
+	}
+
+	size_type rfind(const char* str, size_type pos, size_type count) const
+	{
+		if (count == 0)
+		{
+			return pos == npos ? size() : 0;
+		}
+
+		if (pos < size())
+		{
+			pos = pos + count - 1;
+		}
+
+		pos = std::min(pos, size());
+		const void *found = algo::memrmem(_buf, pos, str, count); 
+		return found ? static_cast<const char*>(found) - _buf : npos;
+
+	}
+
+	size_type rfind(const char* str, size_type pos = npos) const
+	{
+		return rfind(str, pos, strlen(str));
+	}
+
+	size_type rfind(char ch, size_type pos = npos) const
+	{
+		pos = std::min(pos, size());
+		const void *found = memrchr(_buf, ch, pos); 
+		return found ? static_cast<const char*>(found) - _buf : npos;
+	}
 	
-	// TODO: rfind
 	// TODO: find_first_of
 	// TODO: find_first_not_of
 	// TODO: find_last_of

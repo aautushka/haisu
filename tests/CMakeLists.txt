@@ -22,6 +22,7 @@ set(SRC
   metric_monitor_tests
   mono_queue_tests
   mono_string_tests
+  memrmem_tests
 )
 
 add_executable(tests ${SRC})

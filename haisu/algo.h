@@ -76,5 +76,24 @@ size_t binary_search(const Container& container, Key key, Cmp cmp = Cmp())
 	return npos;
 }
 
+inline const void* memrmem(const void* haystack, size_t haystackLen, const void* needle, size_t needleLen)
+{
+	auto h = static_cast<const uint8_t*>(haystack);
+	auto n = static_cast<const uint8_t*>(needle);
+	auto end = h + haystackLen - needleLen + 1;
+	while (h < end)
+	{
+		auto match = static_cast<const uint8_t*>(memrchr(h, n[0], end - h));
+		if (match)
+		{
+			if (!memcmp(match, needle, needleLen)) { return match; }
+			end = match - 1;
+			continue;
+		}
+		break;
+	}
+	return nullptr;
+}
+
 }
 }

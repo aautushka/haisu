@@ -321,3 +321,28 @@ TEST_F(mono_string_test, replaces_substring_with_a_set_of_chars)
 	EXPECT_EQ(string("hello wwwww"), string("hello mundo").replace(6, 5, 5, 'w'));
 	EXPECT_EQ(hello_world, string("helloworld").replace(5, 0, 1, ' '));
 }
+
+TEST_F(mono_string_test, finds_last_character)
+{
+	EXPECT_EQ(0, hello_world.rfind('h'));
+	EXPECT_EQ(10, hello_world.rfind('d'));
+	EXPECT_EQ(9, hello_world.rfind('l'));
+	EXPECT_EQ(string::npos, hello_world.rfind('e', 1));
+	EXPECT_EQ(0, hello_world.rfind('h', 1));
+	EXPECT_EQ(string::npos, hello_world.rfind('x'));
+	EXPECT_EQ(string::npos, string().rfind('x'));
+
+}
+
+TEST_F(mono_string_test, finds_last_substring)
+{
+	EXPECT_EQ(0, hello_world.rfind("hello"));
+	EXPECT_EQ(6, hello_world.rfind("world"));
+	EXPECT_EQ(6, string("hello hello").rfind("hello"));
+	EXPECT_EQ(string::npos, hello_world.rfind("world", 1));
+	EXPECT_EQ(0, hello_world.rfind("hello", 1));
+
+	EXPECT_EQ(string::npos, hello_world.rfind("beautiful"));
+	EXPECT_EQ(string::npos, string().rfind("world"));
+
+}
