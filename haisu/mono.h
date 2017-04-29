@@ -1217,9 +1217,52 @@ public:
 
 		return npos;
 	}
+
+	template <int M>
+	size_type find_last_of(const string<M>& str, size_type pos = npos) const
+	{
+		return find_last_of(str._buf, pos, str.size());
+	}
+
+	size_type find_last_of(const char* str, size_type pos, size_type count) const
+	{
+		// TODO: implement
+		return npos;
+	}
+
+	size_type find_last_of(const char* str, size_type pos = npos) const
+	{
+		return find_last_of(str, pos, strlen(str));
+	}
+
+	size_type find_last_of(char ch, size_type pos = npos) const
+	{
+		return rfind(ch, pos);
+	}
+
+	template <int M>
+	size_type find_last_not_of(const string<M>& str, size_type pos = npos) const
+	{
+		return find_last_not_of(str._buf, pos, str.size());
+	}
+
+	size_type find_last_not_of(const char* str, size_type pos, size_type count) const
+	{
+		// TODO: implement
+		return npos;
+	}
+
+	size_type find_last_not_of(const char* str, size_type pos = npos) const
+	{
+		return find_last_not_of(str, pos, strlen(str));
+	}
+
+	size_type find_last_not_of(char ch, size_type pos = npos) const
+	{
+		// TODO: impelemnt
+		return npos;
+	}
 	
-	// TODO: find_last_of
-	// TODO: find_last_no_of
 	// TODO: iterators
 
 	enum constants : size_type {
