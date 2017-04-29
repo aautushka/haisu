@@ -307,3 +307,17 @@ TEST_F(mono_string_test, inserts_substring)
 	EXPECT_EQ(hello_world, hello.insert(5, hello_world, 5)); 
 	EXPECT_EQ(hello_world, world.insert(0, hello_world, 0, 6)); 
 }
+
+TEST_F(mono_string_test, replaces_substring)
+{
+	EXPECT_EQ(hello_world, string("hola world").replace(0, 4, "hello"));
+	EXPECT_EQ(hello_world, string("hello mundo").replace(6, 5, "world"));
+	EXPECT_EQ(hello_world, string("helloworld").replace(5, 0, " "));
+}
+
+TEST_F(mono_string_test, replaces_substring_with_a_set_of_chars)
+{
+	EXPECT_EQ(string("hhhhh world"), string("hola world").replace(0, 4, 5, 'h'));
+	EXPECT_EQ(string("hello wwwww"), string("hello mundo").replace(6, 5, 5, 'w'));
+	EXPECT_EQ(hello_world, string("helloworld").replace(5, 0, 1, ' '));
+}

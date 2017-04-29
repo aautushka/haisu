@@ -1063,8 +1063,48 @@ public:
 
 		return insert(index, str._buf + index_str, effective_count);
 	}
+
+	template <int M>
+	string& replace(size_type pos, size_type count, const string<M>& str)
+	{
+		return replace(pos, count, str._buf, str.size());
+	}
+
+	string& replace(size_type pos, size_type count, const char* str, size_type count2)
+	{
+		assert(pos <= size());
+		assert(pos + count <= size());
+		assert(size() - count + count2 >= size());
+
+		char* const insert_pos = _buf + pos;
+		memmove(insert_pos + count2, insert_pos + count, size() - pos - count);
+		memcpy(insert_pos, str, count2);
+
+		resize(size() + count2 - count);
+		
+		return *this;
+	}
+
+	string& replace(size_type pos, size_type count, const char* str)
+	{
+		return replace(pos, count, str, strlen(str));
+	}
+
+	string& replace(size_type pos, size_type count, size_type count2, char ch)
+	{
+		assert(pos <= size());
+		assert(pos + count <= size());
+		assert(size() - count + count2 >= size());
+
+		char* const insert_pos = _buf + pos;
+		memmove(insert_pos + count2, insert_pos + count, size() - pos - count);
+		memset(insert_pos, ch, count2);
+
+		resize(size() + count2 - count);
+		
+		return *this;
+	}
 	
-	// TODO: replace
 	// TODO: rfind
 	// TODO: find_first_of
 	// TODO: find_first_not_of
