@@ -354,6 +354,6 @@ TEST_F(mono_string_test, find_first_character_of_set)
 	EXPECT_EQ(1, hello_world.find_first_of("hello", 1));
 	EXPECT_EQ(10, hello_world.find_first_of("xyzd"));
 
-	EXPECT_EQ(npos, hello_world.find_first_of("xyz"));
-	EXPECT_EQ(npos, hello_world.find_first_of("xyz", 11));
+	EXPECT_EQ(string::npos, hello_world.find_first_of("xyz"));
+	EXPECT_EQ(string::npos, hello_world.find_first_of("xyz", 11));
 }

@@ -1152,13 +1152,14 @@ public:
 	size_type find_first_of(const char* str, size_type pos, size_type count) const
 	{
 		assert(pos <= size());
-		char* cur = _buf;
+		const char* cur = _buf + pos;
 		while (*cur)
 		{
 			if (memchr(str, *cur, count))
 			{
 				return cur - _buf;
 			}
+			++cur;
 		}
 
 		return npos;
@@ -1199,3 +1200,5 @@ std::ostream& operator <<(std::ostream& stream, const string<N>& str)
 }
 
 } // namespace mono
+} // namespace haisu
+
