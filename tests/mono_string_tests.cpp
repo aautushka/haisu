@@ -347,7 +347,7 @@ TEST_F(mono_string_test, finds_last_substring)
 
 }
 
-TEST_F(mono_string_test, find_first_character_of_set)
+TEST_F(mono_string_test, finds_first_character_of_set)
 {
 	EXPECT_EQ(0, hello_world.find_first_of("hello"));
 	EXPECT_EQ(0, hello_world.find_first_of("olleh"));
@@ -356,4 +356,24 @@ TEST_F(mono_string_test, find_first_character_of_set)
 
 	EXPECT_EQ(string::npos, hello_world.find_first_of("xyz"));
 	EXPECT_EQ(string::npos, hello_world.find_first_of("xyz", 11));
+}
+
+TEST_F(mono_string_test, finds_first_not_matching_char_from_given_set)
+{
+	EXPECT_EQ(5, hello_world.find_first_not_of("hello"));
+	EXPECT_EQ(5, hello_world.find_first_not_of("olleh"));
+	EXPECT_EQ(6, hello_world.find_first_not_of("hello", 6));
+
+	EXPECT_EQ(string::npos, hello_world.find_first_not_of("hello world"));
+	EXPECT_EQ(string::npos, hello_world.find_first_not_of("hello world", 11));
+}
+
+TEST_F(mono_string_test, finds_first_not_matching_char)
+{
+	EXPECT_EQ(1, hello_world.find_first_not_of('h'));
+	EXPECT_EQ(2, hello_world.find_first_not_of('h', 2));
+	EXPECT_EQ(6, hello_world.find_first_not_of("hello", 6));
+
+	EXPECT_EQ(string::npos, string("hhh").find_first_not_of('h'));
+	EXPECT_EQ(string::npos, string("hhh").find_first_not_of('h', 3));
 }

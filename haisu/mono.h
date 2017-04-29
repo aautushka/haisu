@@ -1174,9 +1174,50 @@ public:
 	{
 		return find(ch, pos);
 	}
+
+	template <int M>
+	size_type find_first_not_of(const string<M>& str, size_type pos = 0) const
+	{
+		return find_first_not_of(str._buf, pos, str.size());
+	}
+
+	size_type find_first_not_of(const char* str, size_type pos, size_type count) const
+	{
+		assert(pos <= size());
+		const char* cur = _buf + pos;
+		while (*cur)
+		{
+			if (!memchr(str, *cur, count))
+			{
+				return cur - _buf;
+			}
+			++cur;
+		}
+
+		return npos;
+	}
+
+	size_type find_first_not_of(const char* str, size_type pos = 0) const
+	{
+		return find_first_not_of(str, pos, strlen(str));
+	}
+
+	size_type find_first_not_of(char ch, size_type pos = 0) const
+	{
+		assert(pos <= size());
+		const char* cur = _buf + pos;
+		while (*cur)
+		{
+			if (*cur != ch)
+			{
+				return cur - _buf;
+			}
+			++cur;
+		}
+
+		return npos;
+	}
 	
-	// TODO: find_first_of
-	// TODO: find_first_not_of
 	// TODO: find_last_of
 	// TODO: find_last_no_of
 	// TODO: iterators
