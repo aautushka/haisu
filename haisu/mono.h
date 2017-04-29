@@ -1142,6 +1142,37 @@ public:
 		const void *found = memrchr(_buf, ch, pos); 
 		return found ? static_cast<const char*>(found) - _buf : npos;
 	}
+
+	template <int M>
+	size_type find_first_of(const string<M>& str, size_type pos = 0) const
+	{
+		return find_first_of(str._buf, pos, str.size());
+	}
+
+	size_type find_first_of(const char* str, size_type pos, size_type count) const
+	{
+		assert(pos <= size());
+		char* cur = _buf;
+		while (*cur)
+		{
+			if (memchr(str, *cur, count))
+			{
+				return cur - _buf;
+			}
+		}
+
+		return npos;
+	}
+
+	size_type find_first_of(const char* str, size_type pos = 0) const
+	{
+		return find_first_of(str, pos, strlen(str));
+	}
+
+	size_type find_first_of(char ch, size_type pos = 0) const
+	{
+		return find(ch, pos);
+	}
 	
 	// TODO: find_first_of
 	// TODO: find_first_not_of
@@ -1168,5 +1199,3 @@ std::ostream& operator <<(std::ostream& stream, const string<N>& str)
 }
 
 } // namespace mono
-} // namespace haisu
-

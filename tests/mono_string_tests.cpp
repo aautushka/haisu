@@ -346,3 +346,14 @@ TEST_F(mono_string_test, finds_last_substring)
 	EXPECT_EQ(string::npos, string().rfind("world"));
 
 }
+
+TEST_F(mono_string_test, find_first_character_of_set)
+{
+	EXPECT_EQ(0, hello_world.find_first_of("hello"));
+	EXPECT_EQ(0, hello_world.find_first_of("olleh"));
+	EXPECT_EQ(1, hello_world.find_first_of("hello", 1));
+	EXPECT_EQ(10, hello_world.find_first_of("xyzd"));
+
+	EXPECT_EQ(npos, hello_world.find_first_of("xyz"));
+	EXPECT_EQ(npos, hello_world.find_first_of("xyz", 11));
+}
