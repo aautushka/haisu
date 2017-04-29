@@ -1283,6 +1283,70 @@ std::ostream& operator <<(std::ostream& stream, const string<N>& str)
 	return stream << str.c_str();
 }
 
+template <typename T, int N>
+class list
+{
+public:
+	list()
+	{
+		clear();
+	}
+
+	void clear()
+	{
+		for (int i = 0; i < N; ++i)
+		{
+			_buf[i].prev = i - 1;
+			_buf[i].next = i + 1;
+		}
+		_free_list = 0;
+		_buf[N - 1].next = -1;
+	}
+
+	void push_back(T t)
+	{
+	}
+
+	T& back()
+	{
+		throw;
+	}
+
+	const T& back() const
+	{
+		throw;
+	}
+
+	T& front()
+	{
+		throw;
+	}
+
+	const T& front() const
+	{
+		throw;
+	}
+
+	bool empty() const
+	{
+		return (_head == -1);
+	}
+
+private:
+	using ptr_t = int;
+	struct node
+	{
+		T t;
+		ptr_t prev;
+		ptr_t next;
+	};
+
+	node _buf[N];
+	ptr_t _free_list = 0;
+	ptr_t _head = -1;
+	ptr_t _tail = -1;
+};
+
 } // namespace mono
 } // namespace haisu
 
