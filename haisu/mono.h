@@ -1431,13 +1431,23 @@ public:
 
 		free(n);
 		return std::move(at(n).t);
-
 	}
 
 	T pop_front()
 	{
 		assert(!empty());
-		throw;
+		auto n = _head;
+		if (head().prev != nil)
+		{
+			_tail = head().prev;
+		}
+		else
+		{
+			_tail = _head = nil;
+		}
+
+		free(n);
+		return std::move(at(n).t);
 	}
 
 private:
