@@ -6,9 +6,18 @@
 
 #include <sys/types.h>
 
+#ifdef __linux__
 #ifndef gettid
 #include <sys/syscall.h>
 #define gettid() syscall(SYS_gettid)
+#endif
+#else
+inline uint64_t gettid()
+{
+	uint64_t tid;
+	pthread_threadid_np(nullptr, &tid);
+	return tid;
+}
 #endif
 
 namespace haisu
