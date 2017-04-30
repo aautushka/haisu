@@ -1291,7 +1291,7 @@ class list
 public:
 	list()
 	{
-		clear();
+		clear_init();
 	}
 
 	list(const list&) = delete;
@@ -1317,13 +1317,13 @@ public:
 
 	void clear()
 	{
-		for (int i = 0; i < N; ++i)
+		// TODO: this does not call descturctors
+		if (_head != nil)
 		{
-			_buf[i].next = i + 1;
-		}
-		_free_list = 0;
-		_buf[N - 1].next = nil;
-		_head = _tail = nil;
+			tail().next = _free_list;
+			_free_list = _head;
+			_head = _tail = nil;
+		}	
 	}
 
 	void push_back(T t)
@@ -1466,6 +1466,17 @@ private:
 
 		_buf[n].next = nil;
 		_buf[n].prev = nil;
+	}
+	
+	void clear_init()
+	{
+		for (int i = 0; i < N; ++i)
+		{
+			_buf[i].next = i + 1;
+		}
+		_free_list = 0;
+		_buf[N - 1].next = nil;
+		_head = _tail = nil;
 	}
 
 	node& tail()
