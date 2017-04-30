@@ -1437,9 +1437,9 @@ public:
 	{
 		assert(!empty());
 		auto n = _head;
-		if (head().prev != nil)
+		if (head().next != nil)
 		{
-			_tail = head().prev;
+			_head = head().next;
 		}
 		else
 		{
