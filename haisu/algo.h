@@ -4,6 +4,16 @@
 #include <vector>
 #include <cstring>
 
+#ifndef __linux__
+inline const void* memrchr(const void* buf, int ch, size_t count)
+{
+	const uint8_t* beg = static_cast<const uint8_t*>(buf);
+	const uint8_t* cur = beg + count - 1;
+	while (cur >= beg) { if (*cur == ch) { return cur; } --cur; }	
+	return nullptr;
+}
+#endif
+
 namespace haisu
 {
 namespace algo
@@ -75,6 +85,7 @@ size_t binary_search(const Container& container, Key key, Cmp cmp = Cmp())
 		
 	return npos;
 }
+
 
 inline const void* memrmem(const void* haystack, size_t haystackLen, const void* needle, size_t needleLen)
 {

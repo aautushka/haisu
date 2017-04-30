@@ -646,6 +646,7 @@ private:
 	T data[N];
 };
 
+
 template <int N>
 class string
 {

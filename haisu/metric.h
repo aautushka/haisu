@@ -120,7 +120,8 @@ public:
 
 	static usec_t now()
 	{
-		// TODO: std::chrono
+		// TODO: std::chrono? performance!
+#ifdef __linux__
 		struct rusage ru;
 		if (0 == getrusage(RUSAGE_THREAD, &ru))
 		{
@@ -128,7 +129,11 @@ public:
 			timeval& sys = ru.ru_stime;
 			return usec(user) + usec(sys);
 		}
-
+#else
+		timeval time;
+		gettimeofday(&time, nullptr);
+		return (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 		return 0;
 	}
 
