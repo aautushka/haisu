@@ -1,4 +1,3 @@
-
 #include <gtest/gtest.h>
 #include "haisu/memory.h"
 
@@ -17,6 +16,9 @@ TEST_F(growbump_test, new_allocation_goes_to_different_address)
 {
 	int* p1 = memory.alloc<int>();
 	int* p2 = memory.alloc<int>();
+
+	EXPECT_NE(nullptr, p1);
+	EXPECT_NE(nullptr, p2);
 
 	EXPECT_TRUE(p1 != p2);
 }

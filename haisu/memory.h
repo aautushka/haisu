@@ -399,6 +399,7 @@ public:
 				return man.alloc(size);
 			}
 		}
+		return res;
 	}
 
 	template <typename T>
