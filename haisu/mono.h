@@ -1287,50 +1287,157 @@ std::ostream& operator <<(std::ostream& stream, const string<N>& str)
 template <typename T, int N>
 class list
 {
+	enum {nil = -1};
 public:
 	list()
 	{
 		clear();
 	}
 
+	list(const list&) = delete;
+	list& operator =(const list&) = delete;
+	list(const list&&) = delete;
+	list& operator =(const list&&) = delete;
+
+	list(std::initializer_list<T> ll)
+	{
+		*this = std::move(ll);
+	}
+
+	list& operator =(std::initializer_list<T> ll)
+	{
+
+		for (auto l: ll)
+		{
+			push_back(std::move(l));
+		}
+
+		return *this;
+	}
+
 	void clear()
 	{
 		for (int i = 0; i < N; ++i)
 		{
-			_buf[i].prev = i - 1;
 			_buf[i].next = i + 1;
 		}
 		_free_list = 0;
-		_buf[N - 1].next = -1;
+		_buf[N - 1].next = nil;
+		_head = _tail = nil;
 	}
 
 	void push_back(T t)
 	{
+		assert(!full());
+
+		auto node = alloc();
+		_buf[node].t = std::move(t);
+		
+		if (empty())
+		{
+			init(node);
+		}
+		else
+		{
+			_buf[node].next = nil;
+			_buf[node].prev = _tail;
+			
+			tail().next = node;
+			_tail = node;
+		}
+	}
+
+	void push_front(T t)
+	{
+		assert(!full());
+		auto node = alloc();
+		_buf[node].t = std::move(t);
+
+		if (empty())
+		{
+			init(node);
+		}
+		else
+		{
+			_buf[node].next = _head;
+			_buf[node].prev = nil;
+
+			head().prev = node;
+			_head = node;
+		}
 	}
 
 	T& back()
 	{
-		throw;
+		assert(!empty());
+		return tail().t;
 	}
 
 	const T& back() const
 	{
-		throw;
+		assert(!empty());
+		return tail().t;
 	}
 
 	T& front()
 	{
-		throw;
+		assert(!empty());
+		return head().t;
 	}
 
 	const T& front() const
 	{
-		throw;
+		assert(!empty());
+		return front().t;
 	}
 
 	bool empty() const
 	{
-		return (_head == -1);
+		return (_head == nil);
+	}
+
+	bool full() const
+	{
+		return _free_list == nil;
+	}
+
+	size_t size() const
+	{
+
+		size_t res = 0;
+		auto cur = _head;
+		while (cur != _tail)
+		{
+			res += 1;
+			cur = at(cur).next;	
+		}	
+		
+		res += (_head == nil ? 0 : 1);
+		return res;
+	}
+
+	T pop_back()
+	{
+		assert(!empty());
+		auto n = _tail;
+		if (tail().prev != nil)
+		{
+			_tail = tail().prev;
+		}
+		else
+		{
+			_tail = _head = nil;
+		}
+
+		free(n);
+		return std::move(at(n).t);
+
+	}
+
+	T pop_front()
+	{
+		assert(!empty());
+		throw;
 	}
 
 private:
@@ -1342,10 +1449,62 @@ private:
 		ptr_t next;
 	};
 
+	void init(ptr_t n)
+	{
+		_head = n;
+		_tail = n;
+
+		_buf[n].next = nil;
+		_buf[n].prev = nil;
+	}
+
+	node& tail()
+	{
+		return _buf[_tail];
+	}
+
+	node& head()
+	{
+		return _buf[_head];
+	}
+
+	node& at(ptr_t index)
+	{
+		return _buf[index];
+	}
+
+	const node& tail() const
+	{
+		return _buf[_tail];
+	}
+
+	const node& head() const
+	{
+		return _buf[_head];
+	}
+
+	const node& at(ptr_t index) const
+	{
+		return _buf[index];
+	}
+
+	ptr_t alloc()
+	{
+		auto node = _free_list;
+		_free_list = _buf[node].next;
+		return node;
+	}
+
+	void free(ptr_t n)
+	{
+		at(n).next = _free_list;
+		_free_list = n;
+	}
+
 	node _buf[N];
 	ptr_t _free_list = 0;
-	ptr_t _head = -1;
-	ptr_t _tail = -1;
+	ptr_t _head = nil;
+	ptr_t _tail = nil; 
 };
 
 } // namespace mono

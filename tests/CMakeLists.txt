@@ -23,6 +23,7 @@ set(SRC
   mono_queue_tests
   mono_string_tests
   memrmem_tests
+  mono_list_tests
 )
 
 add_executable(tests ${SRC})
