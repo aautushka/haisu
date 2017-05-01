@@ -1284,6 +1284,36 @@ std::ostream& operator <<(std::ostream& stream, const string<N>& str)
 	return stream << str.c_str();
 }
 
+template <int N>
+struct memory_requirement_bytes
+{
+	using type = int32_t;
+};
+
+template <>
+struct memory_requirement_bytes<1>
+{
+	using type = int8_t;
+};
+
+template <>
+struct memory_requirement_bytes<2>
+{
+	using type = int16_t;
+};
+
+template <int N>
+struct calc_memory
+{
+	enum { result = (N / 256 == 0 ? 1 : (N / 0xffff == 0 ? 2 : 4)) };
+};
+
+template <int N>
+struct memory_requirement
+{
+	using type = typename memory_requirement_bytes<calc_memory<N>::result>::type;
+};
+
 template <typename T, int N>
 class list
 {
@@ -1317,7 +1347,7 @@ public:
 
 	void clear()
 	{
-		// TODO: this does not call descturctors
+		// TODO: this does not call destructors
 		if (_head != nil)
 		{
 			tail().next = _free_list;
@@ -1451,7 +1481,7 @@ public:
 	}
 
 private:
-	using ptr_t = int;
+	using ptr_t = typename memory_requirement<N>::type;
 	struct node
 	{
 		T t;
