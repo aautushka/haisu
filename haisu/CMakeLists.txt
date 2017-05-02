@@ -10,4 +10,6 @@ set(SRC
   mono
   tree
   metric
+  mono_string
+  mono_list
 )
