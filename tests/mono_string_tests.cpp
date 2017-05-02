@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "haisu/mono.h"
+#include "haisu/mono_string.h"
 
 struct mono_string_test : ::testing::Test
 {

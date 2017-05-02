@@ -1,66 +1,35 @@
 #pragma once
-
-#include <limits>
+#include "mono_list.h"
 
 namespace haisu
 {
-namespace mono
+namespace mono 
 {
-
-template <int N>
-struct memory_requirement_bytes
-{
-	using type = uint32_t;
-};
-
-template <>
-struct memory_requirement_bytes<1>
-{
-	using type = uint8_t;
-};
-
-template <>
-struct memory_requirement_bytes<2>
-{
-	using type = uint16_t;
-};
-
-template <int N>
-struct calc_memory
-{
-	enum { result = (N < 255 ? 1 : (N < 65535 ? 2 : 4)) };
-};
-
-template <int N>
-struct memory_requirement
-{
-	using type = typename memory_requirement_bytes<calc_memory<N>::result>::type;
-};
 
 template <typename T, int N>
-class list
+class slist
 {
 	using ptr_t = typename memory_requirement<N>::type;
 	enum {nil = std::numeric_limits<ptr_t>::max()};
 public:
 	using size_type = ptr_t;
 	
-	list()
+	slist()
 	{
 		clear_init();
 	}
 
-	list(const list&) = delete;
-	list& operator =(const list&) = delete;
-	list(const list&&) = delete;
-	list& operator =(const list&&) = delete;
+	slist(const slist&) = delete;
+	slist& operator =(const slist&) = delete;
+	slist(const slist&&) = delete;
+	slist& operator =(const slist&&) = delete;
 
-	list(std::initializer_list<T> ll)
+	slist(std::initializer_list<T> ll)
 	{
 		*this = std::move(ll);
 	}
 
-	list& operator =(std::initializer_list<T> ll)
+	slist& operator =(std::initializer_list<T> ll)
 	{
 
 		for (auto l: ll)
@@ -96,7 +65,6 @@ public:
 		else
 		{
 			_buf[node].next = nil;
-			_buf[node].prev = _tail;
 			
 			tail().next = node;
 			_tail = node;
@@ -116,9 +84,6 @@ public:
 		else
 		{
 			_buf[node].next = _head;
-			_buf[node].prev = nil;
-
-			head().prev = node;
 			_head = node;
 		}
 	}
@@ -185,18 +150,21 @@ public:
 	T pop_back()
 	{
 		assert(!empty());
-		auto n = _tail;
-		if (tail().prev != nil)
+
+		auto prev = find_prev(_tail);
+		auto old_tail = _tail;
+		if (prev != nil)
 		{
-			_tail = tail().prev;
+			at(prev).next = nil;
+			_tail = prev;
 		}
 		else
 		{
 			_tail = _head = nil;
 		}
 
-		free(n);
-		return std::move(at(n).t);
+		free(old_tail);
+		return std::move(at(old_tail).t);
 	}
 
 	T pop_front()
@@ -221,9 +189,20 @@ private:
 	struct node
 	{
 		T t;
-		ptr_t prev;
 		ptr_t next;
 	};
+
+	ptr_t find_prev(ptr_t n)
+	{
+		auto prev = _head;
+
+		while (at(prev).next != _tail)
+		{
+			prev = at(prev).next;
+		}
+
+		return prev;
+	}
 
 	void init(ptr_t n)
 	{
@@ -231,7 +210,6 @@ private:
 		_tail = n;
 
 		_buf[n].next = nil;
-		_buf[n].prev = nil;
 	}
 	
 	void clear_init()
@@ -294,11 +272,6 @@ private:
 	node _buf[N];
 };
 
-static_assert(sizeof(list<int8_t, 2>) - sizeof(list<int8_t, 1>) == 3, "");
-static_assert(sizeof(list<int8_t, 254>) - sizeof(list<int8_t, 253>) == 3, "");
-static_assert(sizeof(list<int16_t, 256>) - sizeof(list<int16_t, 255>) == 6, "");
-static_assert(sizeof(list<int16_t, 65534>) - sizeof(list<int16_t, 65533>) == 6, "");
-static_assert(sizeof(list<int16_t, 65536>) - sizeof(list<int16_t, 65535>) == 12, "");
-
 } // namespace mono
 } // namespace haisu
+
