@@ -33,6 +33,7 @@ public:
 	{
 		_val = std::move(other._val);
 		_leaves = std::move(other._leaves);
+		return *this;
 	}
 
 	template <typename T>

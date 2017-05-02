@@ -210,6 +210,7 @@ public:
 			_mon = other._mon;
 
 			other._mon = nullptr;
+			return *this;
 		}
 
 	private:

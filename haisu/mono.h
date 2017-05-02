@@ -702,6 +702,7 @@ public:
 	{
 		_buf[0] = ch;
 		resize(1);
+		return *this;
 	}
 
 	constexpr string(const char* str, size_type count)
@@ -868,12 +869,14 @@ public:
 		assert(sz + count <= N);
 		memset(_buf + sz, ch, count);
 		resize(sz + count);
+		return *this;
 	}
 
 	template <int M>
 	constexpr string& append(const string<M>& str)
 	{
 		append(str._buf, str.size());
+		return *this;
 	}
 
 	constexpr string& append(const char* str, size_type count)
