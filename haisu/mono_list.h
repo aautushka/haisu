@@ -45,7 +45,7 @@ class list
 public:
 	using size_type = ptr_t;
 	
-	list()
+	constexpr list() noexcept
 	{
 		clear_init();
 	}

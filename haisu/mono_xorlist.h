@@ -266,5 +266,11 @@ private:
 	node _buf[N];
 };
 
+static_assert(sizeof(xorlist<int8_t, 2>) - sizeof(xorlist<int8_t, 1>) == 2, "");
+static_assert(sizeof(xorlist<int8_t, 254>) - sizeof(xorlist<int8_t, 253>) == 2, "");
+static_assert(sizeof(xorlist<int16_t, 256>) - sizeof(xorlist<int16_t, 255>) == 4, "");
+static_assert(sizeof(xorlist<int16_t, 65534>) - sizeof(xorlist<int16_t, 65533>) == 4, "");
+static_assert(sizeof(xorlist<int16_t, 65536>) - sizeof(xorlist<int16_t, 65535>) == 8, "");
+
 } // namespace mono
 } // namespace haisu

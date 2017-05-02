@@ -272,6 +272,12 @@ private:
 	node _buf[N];
 };
 
+static_assert(sizeof(slist<int8_t, 2>) - sizeof(slist<int8_t, 1>) == 2, "");
+static_assert(sizeof(slist<int8_t, 254>) - sizeof(slist<int8_t, 253>) == 2, "");
+static_assert(sizeof(slist<int16_t, 256>) - sizeof(slist<int16_t, 255>) == 4, "");
+static_assert(sizeof(slist<int16_t, 65534>) - sizeof(slist<int16_t, 65533>) == 4, "");
+static_assert(sizeof(slist<int16_t, 65536>) - sizeof(slist<int16_t, 65535>) == 8, "");
+
 } // namespace mono
 } // namespace haisu
 
