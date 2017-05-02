@@ -412,3 +412,14 @@ TEST_F(mono_string_test, finds_last_not_matching_char)
 	EXPECT_EQ(string::npos, string("hello").find_last_not_of('h', 0));
 }
 
+TEST_F(mono_string_test, iterates_over_string)
+{
+	std::string copy(hello_world.begin(), hello_world.end());
+	EXPECT_EQ("hello world", copy);
+}
+
+TEST_F(mono_string_test, iterates_over_string_in_reverse_order)
+{
+	std::string copy(hello_world.rbegin(), hello_world.rend());
+	EXPECT_EQ("dlrow olleh", copy);
+}

@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <limits>
+#include <iterator>
 
 #include "algo.h"
 
@@ -654,6 +655,212 @@ public:
 	using reference = char&;
 	using const_reference = const char&;
 	using size_type = size_t;
+	using value_type = char;
+	using pointer = char*;
+	using const_pointer = char*;
+
+	enum constants : size_type {
+		npos = std::string::npos
+	};
+
+	template <typename string_type>
+	class string_iterator
+	{
+	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = char;
+		using difference_type = std::ptrdiff_t;
+		using reference = std::conditional_t<std::is_const<string_type>::value, const char, char>&;
+		using pointer = std::add_pointer<reference>; 
+		using self_type = string_iterator;
+
+		constexpr string_iterator()
+		{
+		}
+
+		constexpr string_iterator(string_type* parent, difference_type cursor)
+			: _parent(parent)
+			, _cursor(cursor)
+		{
+		}
+
+		template <typename T>
+		constexpr string_iterator(const string_iterator<T>& rhs)
+			: _parent(rhs._parent)
+			, _cursor(rhs._cursor)
+		{
+		}
+
+		constexpr reference operator *()
+		{
+			return _parent->at(_cursor);
+		}
+
+		constexpr pointer operator->() const
+		{
+			return &*this;
+		}
+
+		constexpr self_type& operator ++()
+		{
+			++_cursor;
+			return *this;
+		}
+
+		constexpr self_type operator ++(int)
+		{
+			auto ret = *this;
+			++(*this);
+			return ret;
+		}
+
+		constexpr self_type& operator --()
+		{
+			--_cursor;
+			return *this;
+		}
+
+		constexpr self_type operator --(int)
+		{
+			auto ret = *this;
+			--(*this);
+			return ret;
+		}
+
+		constexpr self_type operator +(difference_type delta) const
+		{
+			auto ret = *this;
+			return ret += delta;
+		}
+
+		constexpr self_type& operator +=(difference_type delta)
+		{
+			_cursor += delta;
+			return *this;
+		}
+
+		constexpr self_type operator -(difference_type delta) const
+		{
+			auto ret = *this;
+			return ret -= delta;
+		}
+
+		constexpr self_type& operator -=(difference_type delta)
+		{
+			_cursor -= delta;
+			return *this;
+		}
+
+		constexpr difference_type operator -(const self_type& rhs) const
+		{
+			return _cursor - rhs._cursor;
+		}
+
+		constexpr reference operator [](difference_type index) const
+		{
+			return *(*this + index);
+		}
+
+		constexpr friend bool operator ==(const self_type& lhs, const self_type& rhs)
+		{
+			return lhs._parent == rhs._parent && lhs._cursor == rhs._cursor;
+		}
+
+		constexpr friend bool operator !=(const self_type& lhs, const self_type& rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		constexpr friend bool operator <(const self_type& lhs, const self_type& rhs)
+		{
+			assert(lhs._parent == rhs._parent);
+			return lhs._cursor < rhs._cursr;
+		}
+
+		constexpr friend bool operator <=(const self_type& lhs, const self_type& rhs)
+		{
+			return !(lhs > rhs);
+		}
+
+		constexpr friend bool operator >(const self_type& lhs, const self_type& rhs)
+		{
+			assert(lhs._parent == rhs._parent);
+			return lhs._cursor > rhs._cursr;
+		}
+
+		constexpr friend bool operator >=(const self_type& lhs, const self_type& rhs)
+		{
+			return !(lhs < rhs);
+		}
+
+		void swap(self_type& rhs)
+		{
+			std::swap(_parent, rhs._parent);
+			std::swap(_cursor, rhs._cursor);
+		}
+
+	private:
+		string_type* _parent = nullptr;
+		difference_type _cursor = 0;
+
+		template <typename T>
+		friend class string_iterator;
+	};
+
+	using iterator = string_iterator<string>;
+	using const_iterator = string_iterator<const string>;
+	using reverse_iterator = std::reverse_iterator<iterator>;
+	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+	iterator begin()
+	{
+		return iterator(this, 0);
+	}
+
+	iterator end()
+	{
+		return iterator(this, size());
+	}
+
+	const_iterator begin() const
+	{
+		return const_iterator(this, 0);
+	}
+
+	const_iterator end() const
+	{
+		return const_iterator(this, size());
+	}
+
+	reverse_iterator rbegin()
+	{
+		return reverse_iterator(end());
+	}
+
+	reverse_iterator rend()
+	{
+		return reverse_iterator(begin());
+	}
+
+	const_reverse_iterator rbegin() const
+	{
+		return const_reverse_iterator(end());
+	}
+
+	const_reverse_iterator rend() const
+	{
+		return const_reverse_iterator(begin());
+	}
+
+	/*const iterator cbegin() const
+	{
+		return const_iterator(this, 0);
+	}
+
+	const_iterator cend() const
+	{
+		return const_iterator(this, size());
+	}*/
 
 	constexpr string()
 	{
@@ -1296,11 +1503,6 @@ public:
 		return npos;
 	}
 	
-	// TODO: iterators
-
-	enum constants : size_type {
-		npos = std::string::npos
-	};
 
 private:
 	char _buf[N + 1];
