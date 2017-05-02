@@ -327,7 +327,8 @@ TEST_F(mono_string_test, finds_last_character)
 	EXPECT_EQ(0, hello_world.rfind('h'));
 	EXPECT_EQ(10, hello_world.rfind('d'));
 	EXPECT_EQ(9, hello_world.rfind('l'));
-	EXPECT_EQ(string::npos, hello_world.rfind('e', 1));
+	EXPECT_EQ(string::npos, hello_world.rfind('e', 0));
+	EXPECT_EQ(1, hello_world.rfind('e', 1));
 	EXPECT_EQ(0, hello_world.rfind('h', 1));
 	EXPECT_EQ(string::npos, hello_world.rfind('x'));
 	EXPECT_EQ(string::npos, string().rfind('x'));
@@ -341,10 +342,10 @@ TEST_F(mono_string_test, finds_last_substring)
 	EXPECT_EQ(6, string("hello hello").rfind("hello"));
 	EXPECT_EQ(string::npos, hello_world.rfind("world", 1));
 	EXPECT_EQ(0, hello_world.rfind("hello", 1));
+	EXPECT_EQ(0, hello_world.rfind("hello", 0));
 
 	EXPECT_EQ(string::npos, hello_world.rfind("beautiful"));
 	EXPECT_EQ(string::npos, string().rfind("world"));
-
 }
 
 TEST_F(mono_string_test, finds_first_character_of_set)
@@ -376,4 +377,19 @@ TEST_F(mono_string_test, finds_first_not_matching_char)
 
 	EXPECT_EQ(string::npos, string("hhh").find_first_not_of('h'));
 	EXPECT_EQ(string::npos, string("hhh").find_first_not_of('h', 3));
+}
+
+TEST_F(mono_string_test, finds_last_character_of_given_set)
+{
+	EXPECT_EQ(1, string("hh").find_last_of("h"));
+	EXPECT_EQ(1, string("hh").find_last_of("abch"));
+	EXPECT_EQ(0, string("hh").find_last_of("h", 0));
+	EXPECT_EQ(string::npos, string("hh").find_last_of("x"));
+	EXPECT_EQ(string::npos, string("hello").find_last_of("l", 1));
+}
+
+TEST_F(mono_string_test, finds_last_matchin_char)
+{
+	EXPECT_EQ(1, string("hh").find_last_of('h'));
+	EXPECT_EQ(0, string("hh").find_last_of('h', 0));
 }

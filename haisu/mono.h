@@ -1126,7 +1126,7 @@ public:
 
 		if (pos < size())
 		{
-			pos = pos + count - 1;
+			pos = pos + count;
 		}
 
 		pos = std::min(pos, size());
@@ -1142,7 +1142,7 @@ public:
 
 	size_type rfind(char ch, size_type pos = npos) const
 	{
-		pos = std::min(pos, size());
+		pos = std::min(pos == npos ? pos : pos + 1, size());
 		const void *found = memrchr(_buf, ch, pos); 
 		return found ? static_cast<const char*>(found) - _buf : npos;
 	}
@@ -1230,7 +1230,17 @@ public:
 
 	size_type find_last_of(const char* str, size_type pos, size_type count) const
 	{
-		// TODO: implement
+		if (!empty())
+		{
+			pos = std::min(pos, size() - 1);
+			const char* cur = _buf + pos;
+			while (cur >= _buf)
+			{
+				auto found = static_cast<const char*>(memchr(str, *cur, count));
+				if (found) { return cur - _buf; } 
+				--cur;
+			}
+		}
 		return npos;
 	}
 
@@ -1252,7 +1262,18 @@ public:
 
 	size_type find_last_not_of(const char* str, size_type pos, size_type count) const
 	{
-		// TODO: implement
+		// TODO: test
+		if (!empty())
+		{
+			pos = std::min(pos, size() - 1);
+			const char* cur = _buf + pos;
+			while (cur >= _buf)
+			{
+				auto found = static_cast<const char*>(memchr(str, *cur, count));
+				if (!found) { return cur - _buf; }
+				--cur;
+			}
+		}
 		return npos;
 	}
 
@@ -1263,7 +1284,17 @@ public:
 
 	size_type find_last_not_of(char ch, size_type pos = npos) const
 	{
-		// TODO: impelemnt
+		// TODO: test
+		if (!empty())
+		{
+			pos = std::min(pos, size() - 1);
+			const char* cur = _buf + pos;
+			while (cur >= _buf)
+			{
+				if (*cur == ch) { return cur - _buf; }
+				--cur;
+			}
+		}
 		return npos;
 	}
 	
