@@ -15,4 +15,5 @@ set(SRC
   mono_stack
   mono_queue
   mono_slist
+  mono_xorlist
 )
