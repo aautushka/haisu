@@ -1320,6 +1320,8 @@ class list
 	using ptr_t = typename memory_requirement<N>::type;
 	enum {nil = std::numeric_limits<ptr_t>::max()};
 public:
+	using size_type = ptr_t;
+	
 	list()
 	{
 		clear_init();
@@ -1432,10 +1434,10 @@ public:
 		return _free_list == nil;
 	}
 
-	size_t size() const
+	size_type size() const
 	{
 
-		size_t res = 0;
+		size_type res = 0;
 		auto cur = _head;
 		while (cur != _tail)
 		{
@@ -1445,6 +1447,16 @@ public:
 		
 		res += (_head == nil ? 0 : 1);
 		return res;
+	}
+
+	size_type capacity() const
+	{
+		return N;
+	}
+
+	size_type max_size() const
+	{
+		return N;
 	}
 
 	T pop_back()
@@ -1480,6 +1492,7 @@ public:
 		free(n);
 		return std::move(at(n).t);
 	}
+
 
 private:
 	struct node
