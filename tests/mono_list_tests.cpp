@@ -159,3 +159,13 @@ TEST_F(mono_list_tests, reuses_item_from_front)
 	EXPECT_FALSE(list.empty());
 }
 
+TEST_F(mono_list_tests, fill_the_list_up_to_addressing_boundary)
+{
+	haisu::mono::list<int, 254> list;
+	for (int i = 0; i < 254; ++i)
+	{
+		list.push_back(i);
+	}
+
+	EXPECT_EQ(254, list.size());
+}

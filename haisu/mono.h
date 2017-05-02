@@ -1287,25 +1287,25 @@ std::ostream& operator <<(std::ostream& stream, const string<N>& str)
 template <int N>
 struct memory_requirement_bytes
 {
-	using type = int32_t;
+	using type = uint32_t;
 };
 
 template <>
 struct memory_requirement_bytes<1>
 {
-	using type = int8_t;
+	using type = uint8_t;
 };
 
 template <>
 struct memory_requirement_bytes<2>
 {
-	using type = int16_t;
+	using type = uint16_t;
 };
 
 template <int N>
 struct calc_memory
 {
-	enum { result = (N / 256 == 0 ? 1 : (N / 0xffff == 0 ? 2 : 4)) };
+	enum { result = (N < 255 ? 1 : (N < 65535 ? 2 : 4)) };
 };
 
 template <int N>
@@ -1317,7 +1317,8 @@ struct memory_requirement
 template <typename T, int N>
 class list
 {
-	enum {nil = -1};
+	using ptr_t = typename memory_requirement<N>::type;
+	enum {nil = std::numeric_limits<ptr_t>::max()};
 public:
 	list()
 	{
@@ -1481,7 +1482,6 @@ public:
 	}
 
 private:
-	using ptr_t = typename memory_requirement<N>::type;
 	struct node
 	{
 		T t;
@@ -1552,11 +1552,17 @@ private:
 		_free_list = n;
 	}
 
-	node _buf[N];
 	ptr_t _free_list = 0;
 	ptr_t _head = nil;
 	ptr_t _tail = nil; 
+	node _buf[N];
 };
+
+static_assert(sizeof(list<int8_t, 2>) - sizeof(list<int8_t, 1>) == 3, "");
+static_assert(sizeof(list<int8_t, 254>) - sizeof(list<int8_t, 253>) == 3, "");
+static_assert(sizeof(list<int16_t, 256>) - sizeof(list<int16_t, 255>) == 6, "");
+static_assert(sizeof(list<int16_t, 65534>) - sizeof(list<int16_t, 65533>) == 6, "");
+static_assert(sizeof(list<int16_t, 65536>) - sizeof(list<int16_t, 65535>) == 12, "");
 
 } // namespace mono
 } // namespace haisu
