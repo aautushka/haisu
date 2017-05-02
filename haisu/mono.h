@@ -1262,7 +1262,6 @@ public:
 
 	size_type find_last_not_of(const char* str, size_type pos, size_type count) const
 	{
-		// TODO: test
 		if (!empty())
 		{
 			pos = std::min(pos, size() - 1);
@@ -1284,14 +1283,13 @@ public:
 
 	size_type find_last_not_of(char ch, size_type pos = npos) const
 	{
-		// TODO: test
 		if (!empty())
 		{
 			pos = std::min(pos, size() - 1);
 			const char* cur = _buf + pos;
 			while (cur >= _buf)
 			{
-				if (*cur == ch) { return cur - _buf; }
+				if (*cur != ch) { return cur - _buf; }
 				--cur;
 			}
 		}

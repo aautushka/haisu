@@ -388,8 +388,27 @@ TEST_F(mono_string_test, finds_last_character_of_given_set)
 	EXPECT_EQ(string::npos, string("hello").find_last_of("l", 1));
 }
 
-TEST_F(mono_string_test, finds_last_matchin_char)
+TEST_F(mono_string_test, finds_last_matching_char)
 {
 	EXPECT_EQ(1, string("hh").find_last_of('h'));
 	EXPECT_EQ(0, string("hh").find_last_of('h', 0));
 }
+
+TEST_F(mono_string_test, finds_last_character_of_not_given_set)
+{
+	EXPECT_EQ(1, string("hh").find_last_not_of("x"));
+	EXPECT_EQ(1, string("hh").find_last_not_of("xyz"));
+	EXPECT_EQ(0, string("hh").find_last_not_of("x", 0));
+	EXPECT_EQ(string::npos, string("hh").find_last_not_of("h"));
+	EXPECT_EQ(string::npos, string("hh").find_last_not_of("hxyz"));
+	EXPECT_EQ(string::npos, string("hello").find_last_not_of("he", 1));
+}
+
+TEST_F(mono_string_test, finds_last_not_matching_char)
+{
+	EXPECT_EQ(1, string("hh").find_last_not_of('x'));
+	EXPECT_EQ(0, string("hh").find_last_not_of('x', 0));
+	EXPECT_EQ(string::npos, string("hh").find_last_not_of('h'));
+	EXPECT_EQ(string::npos, string("hello").find_last_not_of('h', 0));
+}
+
