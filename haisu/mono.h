@@ -1002,7 +1002,7 @@ public:
 	size_type find(const char* str, size_type pos, size_type count) const
 	{
 		assert(pos <= size());
-		const void* found = memmem(_buf + pos, size(), str, count);
+		const void* found = memmem(_buf + pos, size() - pos, str, count);
 		return found ? static_cast<const char*>(found) - _buf : npos;
 	}
 
