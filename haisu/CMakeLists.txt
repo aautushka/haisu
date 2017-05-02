@@ -12,4 +12,6 @@ set(SRC
   metric
   mono_string
   mono_list
+  mono_stack
+  mono_queue
 )
