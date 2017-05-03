@@ -196,7 +196,7 @@ private:
 	{
 		auto prev = _head;
 
-		while (at(prev).next != _tail)
+		while (prev != nil && at(prev).next != _tail)
 		{
 			prev = at(prev).next;
 		}
