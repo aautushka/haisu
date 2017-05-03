@@ -6,6 +6,30 @@ struct tree_test : ::testing::Test
 {
 	haisu::tree<int, int> tree;
 	using path = std::vector<int>;
+
+	void replace_all(std::string& str, const std::string& what, const std::string& with)
+	{
+		size_t pos = str.find(what, 0);
+		while (pos < str.size() && pos != std::string::npos)
+		{
+			str.replace(pos, what.size(), with);
+			pos += with.size();
+			pos = str.find(what, pos);
+		}
+	}
+
+	std::string beautify(std::string str)
+	{
+		std::string ret(str);
+		replace_all(ret, "\"", "");
+		replace_all(ret, " ", "");
+		return ret;
+	}
+
+	std::string to_json()
+	{
+		return beautify(haisu::to_json(tree));
+	}
 };
 
 TEST_F(tree_test, assignes_tree_root)
@@ -131,3 +155,24 @@ TEST_F(tree_test, count_number_of_tree_nodes)
 	EXPECT_EQ(3, tree.size());
 }
 
+TEST_F(tree_test, serializes_empty_tree)
+{
+	EXPECT_EQ("{}", to_json());
+}
+
+TEST_F(tree_test, serializes_shallow_tree_to_json)
+{
+	tree[1] = 1;
+	tree[2] = 2;
+
+	EXPECT_EQ("{1:1,2:2}", to_json());			
+}
+
+TEST_F(tree_test, serializes_deep_tree_to_json)
+{
+	tree[1] = 1;
+	tree[path{1, 2}] = 2;
+	tree[path{1, 2, 3}] = 3;
+
+	EXPECT_EQ("{1:{#:1,2:{#:2,3:3}}}", to_json());			
+}

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <map>
+#include <sstream>
 
 namespace haisu
 {
@@ -238,5 +239,53 @@ private:
 	value_type _val;
 	leaves_t _leaves;	
 }; 
+
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+T to_json(T t)
+{
+	return t;
+}
+
+template <typename U, typename V>
+void to_json(const tree<U, V>& tr, std::ostream& stream, bool write_default_value = false)
+{
+	stream << '{';
+
+	if (write_default_value)
+	{
+		stream << "\"#\": \"" << to_json(tr.get()) << '"';
+	}
+
+	for (auto i = tr.begin(); i != tr.end(); ++i)
+	{
+		if (write_default_value || i != tr.begin())
+		{
+			stream << ", ";
+		}
+
+		stream << '"' << i->first << "\":";
+		
+		auto& child = *i->second;
+		if (child.begin() != child.end())
+		{
+			to_json(*i->second, stream, true);
+		}
+		else
+		{
+			stream << '"' << to_json(child.get()) << '"';
+		}
+	}
+	stream << '}';
+}
+
+
+template <typename U, typename V>
+std::string to_json(const tree<U, V>& tr)
+{
+	std::stringstream ret;
+	to_json(tr, ret); 
+	return std::move(ret.str());
+}
+
 } // namespace haisu
 

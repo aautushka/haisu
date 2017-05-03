@@ -12,6 +12,7 @@ struct metric_monitor_test : ::testing::Test
 		auto start = timer::now();
 		while (timer::now() - start < usec);
 	}
+
 };
 
 TEST_F(metric_monitor_test, creates_manual_metric)
@@ -64,4 +65,10 @@ TEST_F(metric_monitor_test, ignores_overflow_metrics)
 	auto rep = mon.report();
 	EXPECT_EQ(1, rep.size());
 	EXPECT_LE(1, rep[1]);
+}
+
+TEST_F(metric_monitor_test, produces_json_report)
+{
+	auto rep = mon.report_json();
+	EXPECT_EQ("{}", mon.report_json());
 }

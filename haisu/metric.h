@@ -57,7 +57,7 @@ public:
 
 private:
 	unsigned long long _total = 0;
-	int _calls = 0;
+	unsigned long _calls = 0;
 };
 
 template <typename T, int N>
@@ -121,6 +121,8 @@ public:
 	static usec_t now()
 	{
 		// TODO: std::chrono? performance!
+		// 	 benchmark gettimeofday -- it's supposed to be fast and work in user-space
+		// 	 consider TSC
 #ifdef __linux__
 		struct rusage ru;
 		if (0 == getrusage(RUSAGE_THREAD, &ru))
@@ -224,6 +226,8 @@ public:
 
 		friend class monitor;
 	};
+	
+	using report_t = tree<T, unsigned long long>;
 
 	void start(T id)
 	{
@@ -249,7 +253,7 @@ public:
 		return metric(id, *this);
 	}
 
-	tree<T, unsigned long long> report()
+	report_t report()
 	{
 		return _table.query();
 	}
@@ -257,7 +261,7 @@ public:
 	std::string report_json()
 	{
 		auto data = report();
-		return "";
+		return haisu::to_json(report());
 	}
 	
 private:
