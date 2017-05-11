@@ -16,4 +16,5 @@ set(SRC
   mono_queue
   mono_slist
   mono_xorlist
+  concurrency
 )
