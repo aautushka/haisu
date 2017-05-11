@@ -13,19 +13,43 @@ public:
 	{
 	public:
 		explicit proxy(synchronized& s)
-			: base_(s)
+			: base_(&s)
 		{
-			base_.lock();
+			base_->lock();
+		}
+
+		proxy(const proxy&) = delete;
+		proxy& operator =(const proxy&) = delete;
+		proxy(proxy&& rhs)
+		{
+			base_ = rhs.base_;
+			rhs.base_ = nullptr;
+		}
+
+		proxy& operator =(proxy&& rhs)
+		{
+			if (base_)
+			{
+				base_->unlock();
+				base_ = nullptr;
+			}
+
+			base_ = rhs.base_;
+			rhs.base_ = nullptr;
 		}
 
 		~proxy()
 		{
-			base_.unlock();
+			if (base_)
+			{
+				base_->unlock();
+			}
 		}
 
 		T* operator ->()
 		{
-			return &base_.t_;
+			assert(base_ != nullptr);
+			return &base_->t_;
 		}
 
 		const T* operator ->() const
@@ -34,18 +58,18 @@ public:
 		}
 
 	private:
-		synchronized& base_;
+		synchronized* base_ = nullptr;
 	};
 
 	proxy operator ->()
 	{
-		return proxy(*this);
+		return std::move(proxy(*this));
 	}
 
-	const proxy operator->() const
+	/*const proxy operator->() const
 	{
 		return proxy(*this);
-	}
+	}*/
 
 	template <typename ...Args>
 	synchronized(Args&&... args) : t_(std::forward<Args>(args)...)
