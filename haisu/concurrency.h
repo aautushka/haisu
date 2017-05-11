@@ -52,7 +52,6 @@ public:
 	{
 	}
 
-private:
 	void lock()
 	{
 		mutex_.lock();
@@ -62,6 +61,8 @@ private:
 	{
 		mutex_.unlock();
 	}
+
+private:
 
 	T t_;
 	std::recursive_mutex mutex_;
