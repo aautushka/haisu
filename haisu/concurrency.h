@@ -66,10 +66,10 @@ public:
 		return std::move(proxy(*this));
 	}
 
-	/*const proxy operator->() const
+	const proxy operator->() const
 	{
 		return proxy(*this);
-	}*/
+	}
 
 	template <typename ...Args>
 	synchronized(Args&&... args) : t_(std::forward<Args>(args)...)
