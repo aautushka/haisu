@@ -64,7 +64,7 @@ public:
 
 	proxy operator ->()
 	{
-		return std::move(proxy(*this));
+		return proxy(*this);
 	}
 
 	const proxy operator->() const
