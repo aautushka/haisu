@@ -36,6 +36,7 @@ public:
 
 			base_ = rhs.base_;
 			rhs.base_ = nullptr;
+			return *this;
 		}
 
 		~proxy()
