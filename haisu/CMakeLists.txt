@@ -17,4 +17,5 @@ set(SRC
   mono_slist
   mono_xorlist
   concurrency
+  duo
 )
