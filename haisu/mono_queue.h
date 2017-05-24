@@ -168,25 +168,25 @@ public:
 private:
 	void move_tail_forward()
 	{
-		count += 1;
+		++count;
 		move_forward(tail);
 	}
 
 	void move_head_backward()
 	{
-		count += 1;
+		++count;
 		move_backward(head);
 	}
 
 	void move_tail_backward()
 	{
-		count -= 1;
+		--count;
 		move_backward(tail);
 	}
 
 	void move_head_forward()
 	{
-		count -= 1;
+		--count;
 		move_forward(head);
 	}
 
