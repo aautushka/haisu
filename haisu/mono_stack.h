@@ -1,5 +1,6 @@
 #pragma once 
 #include <limits>
+#include "meta.h"
 
 namespace haisu
 {
@@ -7,9 +8,11 @@ namespace mono
 {
 
 template <typename T, int N = 256>
-class stack
+class stack final
 {
 public:
+	using size_type = meta::memory_requirement_t<N>;
+
 	static_assert(std::is_integral<T>::value, "integral type required");
 	static_assert(N <= std::numeric_limits<T>::max(), "");
 
@@ -85,18 +88,17 @@ public:
 
 	stack()
 	{
-		memset(_stack, 0, byte_capacity());
+		memset(this, 0, sizeof(*this));
 	}
 
 	stack(const stack& other)
 	{
-		*this = other;
+		memcpy(this, &other, sizeof(other));
 	}
 
 	stack& operator =(const stack& other)
 	{
-		memcpy(_stack, other._stack, byte_capacity());
-		_size = other.size();
+		memcpy(this, &other, sizeof(other));
 		return *this;
 	}
 
@@ -111,14 +113,14 @@ public:
 	{
 		if (_size == other._size)
 		{
-			return 0 == memcmp(_stack, other._stack, _size * sizeof(T));
+			return 0 == memcmp(_stack, other._stack, byte_capacity());
 		}
 		return false;
 	}
 
 	bool operator ==(const stack& other) const
 	{
-		return 0 == memcmp(this, &other, byte_capacity());
+		return 0 == memcmp(this, &other, sizeof(*this));
 	}
 
 	template <int U>
@@ -196,7 +198,7 @@ public:
 		return cend();
 	}
 
-	size_t size() const
+	size_type size() const
 	{
 		return _size;
 	}
@@ -206,7 +208,7 @@ public:
 		return 0 == size();
 	}
 
-	static constexpr size_t capacity()
+	static constexpr size_type capacity()
 	{
 		return N;
 	}
@@ -241,17 +243,17 @@ public:
 	}
 
 private:
-	size_t left() const
+	size_type left() const
 	{
 		return capacity() - _size;
 	}
 
-	static constexpr size_t byte_capacity()
+	static constexpr size_type byte_capacity()
 	{
 		return capacity() * sizeof(T);
 	}
 
-	T _size = 0;
+	size_type _size = 0;
 	T _stack[N];
 
 	template <typename U, int V> friend class stack;
@@ -261,12 +263,14 @@ static_assert(sizeof(stack<char, 15>) == 16, "the structure must be tightly pack
 
 // overflow-tolerant stack, ignores everything what goes beyond the boundary
 template <typename T, int N = 256>
-class overflow_stack
+class overflow_stack final
 {
 public:
 	using self_type = overflow_stack;
-	using iterator = typename stack<T, N>::iterator;
-	using const_iterator = typename stack<T, N>::const_iterator;
+	using base_type = stack<T, N>;
+	using iterator = typename base_type::iterator;
+	using const_iterator = typename base_type::const_iterator;
+	using size_type = typename base_type::size_type; 
 
 	overflow_stack()
 	{
@@ -307,7 +311,7 @@ public:
 		return _stack.top();
 	}
 	
-	size_t size() const
+	size_type size() const
 	{
 		return _stack.size() + _overflow;
 	}
@@ -317,7 +321,7 @@ public:
 		return 0 == size();
 	}
 
-	static constexpr size_t capacity()
+	static constexpr size_type capacity()
 	{
 		return N;
 	}
@@ -425,7 +429,7 @@ public:
 	}
 
 private:
-	stack<T, N> _stack;
+	base_type _stack;
 	int _overflow = 0;
 
 	template <typename U, int M> friend class overflow_stack;

@@ -1,46 +1,17 @@
 #pragma once
 
 #include <limits>
+#include "meta.h"
 
 namespace haisu
 {
 namespace mono
 {
 
-template <int N>
-struct memory_requirement_bytes
-{
-	using type = uint32_t;
-};
-
-template <>
-struct memory_requirement_bytes<1>
-{
-	using type = uint8_t;
-};
-
-template <>
-struct memory_requirement_bytes<2>
-{
-	using type = uint16_t;
-};
-
-template <int N>
-struct calc_memory
-{
-	enum { result = (N < 255 ? 1 : (N < 65535 ? 2 : 4)) };
-};
-
-template <int N>
-struct memory_requirement
-{
-	using type = typename memory_requirement_bytes<calc_memory<N>::result>::type;
-};
-
 template <typename T, int N>
 class list
 {
-	using ptr_t = typename memory_requirement<N>::type;
+	using ptr_t = meta::memory_requirement_t<N>;
 	enum {nil = std::numeric_limits<ptr_t>::max()};
 public:
 	using size_type = ptr_t;

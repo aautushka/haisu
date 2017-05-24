@@ -1,5 +1,5 @@
 #pragma once
-#include "mono_list.h"
+#include "meta.h"
 
 namespace haisu
 {
@@ -9,7 +9,7 @@ namespace mono
 template <typename T, int N>
 class slist
 {
-	using ptr_t = typename memory_requirement<N>::type;
+	using ptr_t = meta::memory_requirement_t<N>;
 	enum {nil = std::numeric_limits<ptr_t>::max()};
 public:
 	using size_type = ptr_t;

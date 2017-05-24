@@ -1,3 +1,5 @@
+#pragma once
+#include "meta.h"
 
 namespace haisu
 {
@@ -16,6 +18,7 @@ class queue
 {
 public:
 	using self_type = queue<T, N>;
+	using size_type = meta::memory_requirement_t<N>;
 
 	static_assert(power_of_two(N), "suboptimal performance");
 
@@ -24,7 +27,7 @@ public:
 		return count == 0;
 	}
 	
-	size_t capacity() const
+	size_type capacity() const
 	{
 		return N;
 	}
@@ -34,7 +37,7 @@ public:
 		return size() == capacity();	
 	}
 
-	size_t size() const
+	size_type size() const
 	{
 		return count;
 	}
@@ -149,8 +152,8 @@ public:
 
 	private:
 		list_t* list = nullptr;
-		int cur = 0;
-		int left = 0;
+		size_type cur = 0;
+		size_type left = 0;
 	};
 
 	iterator begin() 
@@ -187,31 +190,31 @@ private:
 		move_forward(head);
 	}
 
-	void move_backward(int& ptr)
+	void move_backward(size_type& ptr)
 	{
 		ptr = ((N - 1) + ptr) % N;
 	}
 
-	void move_forward(int& ptr)
+	void move_forward(size_type& ptr)
 	{
 		ptr = (ptr + 1) % N;
 	}
 
-	int prev(int ptr)
+	size_type prev(size_type ptr)
 	{
 		move_backward(ptr);
 		return ptr;
 	}
 
-	int next(int ptr)
+	size_type next(size_type ptr)
 	{
 		move_forward(ptr);
 		return ptr;
 	}
 
-	int head = 0;
-	int tail = 0;
-	int count = 0;
+	size_type head = 0;
+	size_type tail = 0;
+	size_type count = 0;
 	T data[N];
 };
 

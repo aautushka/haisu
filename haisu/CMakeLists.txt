@@ -18,4 +18,5 @@ set(SRC
   mono_xorlist
   concurrency
   duo
+  meta
 )
