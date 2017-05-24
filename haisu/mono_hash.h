@@ -10,10 +10,21 @@ namespace mono
 template <int N>
 struct collide_hash
 {
-template <typename T> int operator() (const T&) const { return N; }
+	template <typename T> int operator() (const T&) const { return N; }
 };
 
-template <typename Key, typename Val, int N, typename Hash = std::hash<Key>>
+struct do_assert
+{
+	void operator ()(const char* message) { assert(false);}
+};
+
+template <typename Exception>
+struct do_throw
+{
+	void operator ()(const char* message) { throw Exception(); }
+};
+
+template <typename Key, typename Val, int N, typename Hash = std::hash<Key>, typename Throw = do_assert>
 class hash
 {
 public:
@@ -112,8 +123,7 @@ public:
 			++cur;
 		}
 
-		// if we get here then the hash is full
-		assert(false);
+		signal_error("hash is full");
 	}
 
 	const value_type& at(key_type key) const
@@ -130,8 +140,7 @@ public:
 			}
 			else if (k == 0)
 			{
-				// there is no such key in the hash
-				assert(false);
+				signal_error("there is no such key in the hash");
 			}
 			++cur;
 		}
@@ -147,13 +156,12 @@ public:
 			}
 			else if (k == 0)
 			{
-				// there is no such key in the hash
+				signal_error("there is no suck key in the hash");
 			}
 			++cur;
 		}
 
-		// if we get here then the hash is full
-		assert(false);
+		signal_error("hash is full");
 	}
 
 	bool empty() const
@@ -211,6 +219,11 @@ private:
 	int get_index(key_type key) const
 	{
 		return hash_type()(key) % N;
+	}
+
+	void signal_error(const char* message) const
+	{
+		Throw()(message);
 	}
 
 	using pair_type = std::pair<key_type, value_type>;

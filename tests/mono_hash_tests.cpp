@@ -3,14 +3,23 @@
 
 struct mono_hash_test : public ::testing::Test
 {
-	haisu::mono::hash<int, int, 16, haisu::mono::collide_hash<7>> hash;
+	using no_throw_hash = haisu::mono::hash<int, int, 16, haisu::mono::collide_hash<7>>;
+	using throw_hash = haisu::mono::hash<int, int, 16, haisu::mono::collide_hash<7>, haisu::mono::do_throw<std::exception>>;
 
-	void fill_to_capacity()
+	no_throw_hash hash;
+
+	template <typename Hash>
+	void fill_to_capacity(Hash& hash)
 	{
 		for (int i = 1; i <= hash.capacity(); ++i)
 		{
 			hash[i] = i;
 		}
+	}
+
+	void fill_to_capacity()
+	{
+		fill_to_capacity(hash);
 	}
 };
 
@@ -87,4 +96,20 @@ TEST_F(mono_hash_test, clears_hash)
 	hash.clear();
 
 	EXPECT_TRUE(hash.empty());
+}
+
+TEST_F(mono_hash_test, throws_if_full)
+{
+	throw_hash hash;
+	fill_to_capacity(hash);
+
+	EXPECT_THROW((hash[123] = 456), std::exception);
+}
+
+TEST_F(mono_hash_test, throw_is_no_such_element)
+{
+	throw_hash hash;
+	const throw_hash& chash = hash;
+
+	EXPECT_THROW(chash[123], std::exception);
 }
