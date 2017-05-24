@@ -430,7 +430,7 @@ public:
 
 private:
 	base_type _stack;
-	int _overflow = 0;
+	size_type _overflow = 0;
 
 	template <typename U, int M> friend class overflow_stack;
 };
