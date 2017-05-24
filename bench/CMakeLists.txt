@@ -4,7 +4,7 @@ include_directories (..)
 
 set(SRC 
   zset_bench
-  partition_bench
+  #  partition_bench
 ) 
 
 add_executable(bench ${SRC})
