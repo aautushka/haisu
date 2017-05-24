@@ -27,6 +27,7 @@ set(SRC
   mono_slist_tests
   mono_xorlist_tests
   synchronized_tests
+  mono_hash_tests
 )
 
 add_executable(tests ${SRC})

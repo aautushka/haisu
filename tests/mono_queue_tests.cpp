@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "haisu/mono.h"
+#include "haisu/mono_queue.h"
 
 struct mono_queue_test : public ::testing::Test
 {

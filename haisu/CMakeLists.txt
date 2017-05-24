@@ -19,4 +19,5 @@ set(SRC
   concurrency
   duo
   meta
+  hash
 )

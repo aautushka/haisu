@@ -5,4 +5,5 @@
 #include "mono_stack.h"
 #include "mono_queue.h"
 #include "mono_slist.h"
+#include "mono_hash.h"
 
