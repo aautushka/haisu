@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "haisu/mono.h"
+#include "haisu/mono_stack.h"
 
 struct overflow_stack_test : ::testing::Test
 {

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "haisu/tree.h"
-#include "haisu/mono.h"
+#include "haisu/mono_stack.h"
 
 struct tree_test : ::testing::Test
 {
