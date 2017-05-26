@@ -33,7 +33,7 @@ struct direct_hash
 template <typename T>
 struct amiga_hash
 {
-	constexpr int32_t operator ()(T t) const
+	constexpr T operator ()(T t) const
 	{
 		return t * 0xdeece66d + 0xb;
 	}

@@ -108,8 +108,42 @@ static void bench_best_case_mono_hash(benchmark::State& state)
 	}
 }
 
+static void bench_amiga_hash(benchmark::State& state) 
+{
+	auto data = generate_random_data();
+
+	while (state.KeepRunning())
+	{
+		using namespace haisu::mono;
+		hash<int, int, HASH_SIZE, direct_hash<int>> hash; 
+
+		for (auto i : data)
+		{
+			hash.insert(i, i);
+		}
+	}
+}
+
+static void bench_direct_hash_on_random_data(benchmark::State& state) 
+{
+	auto data = generate_random_data();
+
+	while (state.KeepRunning())
+	{
+		using namespace haisu::mono;
+		hash<int, int, HASH_SIZE, direct_hash<int>> hash; 
+
+		for (auto i : data)
+		{
+			hash.insert(i, i);
+		}
+	}
+}
+
 BENCHMARK(bench_collisions);
 BENCHMARK(bench_std_hash);
 BENCHMARK(bench_std_map);
 BENCHMARK(bench_std_unordered_map);
 BENCHMARK(bench_best_case_mono_hash);
+BENCHMARK(bench_amiga_hash);
+BENCHMARK(bench_direct_hash_on_random_data);
