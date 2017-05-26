@@ -50,45 +50,12 @@ public:
 	
 	bool contains(key_type key) const
 	{
-		const auto index = get_index(key);
-		auto cur = index;
-
-		do 
-		{
-			const auto k = get_key(cur);
-			if (k == key)
-			{
-				return true;
-			}
-			else if (k == 0)
-			{
-				return false;
-			}
-			++cur;
-		}
-		while (cur < N);
-
-		cur = 0;
-		while (cur < index)
-		{
-			const auto k = get_key(cur);
-			if (k == key)
-			{
-				return true;
-			}
-			else if (k == 0)
-			{
-				return false;
-			}
-			++cur;
-		}
-
-		return false;
+		return -1 != find_index(key);
 	}
 
 	value_type& at(key_type key)
 	{
-		const auto index = get_index(key);
+		const auto index = get_possible_index(key);
 		auto cur = index;
 
 		do 
@@ -126,9 +93,51 @@ public:
 		signal_error("hash is full");
 	}
 
+	void insert(key_type key, value_type val)
+	{
+		const auto index = get_possible_index(key);
+		auto cur = index;
+
+		do 
+		{
+			const auto k = get_key(cur);
+			if (k == 0)
+			{
+				table_[cur].first = key;
+				table_[cur].second = val;
+				return;
+			}
+			else if (k == key)
+			{
+				signal_error("duplicate entry");
+			}
+			++cur;
+		}
+		while (cur < N);
+
+		cur = 0;
+		while (cur < index)
+		{
+			const auto k = get_key(cur);
+			if (k == 0)
+			{
+				table_[cur].first = key;
+				table_[cur].second = val;
+				return;
+			}
+			else if (k == key)
+			{
+				signal_error("duplicate entry");
+			}
+			++cur;
+		}
+
+		signal_error("hash is full");
+	}
+
 	const value_type& at(key_type key) const
 	{
-		const auto index = get_index(key);
+		const auto index = get_possible_index(key);
 		auto cur = index;
 
 		do 
@@ -192,6 +201,15 @@ public:
 		return N;
 	}
 
+	void erase(key_type key)
+	{
+		const auto index = find_index(key);
+		if (key != -1)
+		{
+			table_[index].first = 0;
+		}
+	}
+
 private:
 	void clear(std::true_type)
 	{
@@ -206,7 +224,7 @@ private:
 		return table_[index].first;
 	}
 
-	value_type get_value(int index) const
+	const value_type& get_value(int index) const
 	{
 		return table_[index].second;
 	}
@@ -216,7 +234,7 @@ private:
 		return table_[index].second;
 	}
 
-	int get_index(key_type key) const
+	int get_possible_index(key_type key) const
 	{
 		return hash_type()(key) % N;
 	}
@@ -224,6 +242,44 @@ private:
 	void signal_error(const char* message) const
 	{
 		Throw()(message);
+	}
+
+	int find_index(key_type key) const
+	{
+		const auto index = get_possible_index(key);
+		auto cur = index;
+
+		do 
+		{
+			const auto k = get_key(cur);
+			if (k == key)
+			{
+				return cur;
+			}
+			else if (k == 0)
+			{
+				return -1;
+			}
+			++cur;
+		}
+		while (cur < N);
+
+		cur = 0;
+		while (cur < index)
+		{
+			const auto k = get_key(cur);
+			if (k == key)
+			{
+				return cur;
+			}
+			else if (k == 0)
+			{
+				return -1;
+			}
+			++cur;
+		}
+
+		return -1;
 	}
 
 	using pair_type = std::pair<key_type, value_type>;

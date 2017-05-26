@@ -113,3 +113,58 @@ TEST_F(mono_hash_test, throw_is_no_such_element)
 
 	EXPECT_THROW(chash[123], std::exception);
 }
+
+TEST_F(mono_hash_test, inserts_new_element)
+{
+	hash.insert(1, 2);
+	EXPECT_EQ(2, hash[1]);
+}
+
+TEST_F(mono_hash_test, inserts_multiple_elements)
+{
+	hash.insert(1, 2);
+	hash.insert(2, 3);
+	EXPECT_EQ(2, hash[1]);
+	EXPECT_EQ(3, hash[2]);
+}
+
+TEST_F(mono_hash_test, throws_if_attempting_to_insert_same_element_twice)
+{
+	throw_hash hash;
+
+	hash.insert(1, 2);
+	EXPECT_THROW(hash.insert(1, 3), std::exception);
+}
+
+TEST_F(mono_hash_test, throws_if_inserting_into_full_hash)
+{
+	throw_hash hash;
+	fill_to_capacity(hash);
+
+	EXPECT_THROW(hash.insert(888, 999), std::exception);
+}
+
+TEST_F(mono_hash_test, keeps_silent_when_trying_to_erase_nonexistant_item)
+{
+	hash.erase(1);
+}
+
+TEST_F(mono_hash_test, erases_item)
+{
+	hash.insert(1, 2);
+	hash.erase(1);
+
+	EXPECT_FALSE(hash.contains(1));
+}
+
+TEST_F(mono_hash_test, reuses_erased_capacity)
+{
+	fill_to_capacity(hash);
+	hash.erase(1);
+
+	// make sure we removed an item
+	ASSERT_EQ(hash.size() + 1, hash.capacity());
+
+	hash.insert(1, 1);
+	EXPECT_EQ(hash.size(), hash.capacity());
+}
