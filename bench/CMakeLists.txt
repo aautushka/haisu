@@ -3,8 +3,10 @@ project(bench CXX)
 include_directories (..)
 
 set(SRC 
-  zset_bench
-  #  partition_bench
+  main.cpp
+  # zset_bench
+  # partition_bench
+  mono_hash_bench
 ) 
 
 add_executable(bench ${SRC})

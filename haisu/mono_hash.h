@@ -24,6 +24,34 @@ struct do_throw
 	void operator ()(const char* message) { throw Exception(); }
 };
 
+template <typename T>
+struct direct_hash
+{
+	constexpr T operator ()(T t) const { return t; }
+};
+
+template <typename T>
+struct amiga_hash
+{
+	constexpr int32_t operator ()(T t) const
+	{
+		return t * 0xdeece66d + 0xb;
+	}
+};
+
+
+struct hash_traits
+{
+	void signal_error()
+	{
+		
+	}
+
+	void probe(int& index)
+	{
+	}
+};
+
 template <typename Key, typename Val, int N, typename Hash = std::hash<Key>, typename Throw = do_assert>
 class hash
 {
@@ -70,7 +98,7 @@ public:
 				table_[cur].first = key;
 				return get_value(cur);
 			}
-			++cur;
+			probe(cur);
 		}
 		while (cur < N);
 
@@ -87,7 +115,8 @@ public:
 				table_[cur].first = key;
 				return get_value(cur);
 			}
-			++cur;
+
+			probe(cur);
 		}
 
 		signal_error("hash is full");
@@ -111,7 +140,7 @@ public:
 			{
 				signal_error("duplicate entry");
 			}
-			++cur;
+			probe(cur);
 		}
 		while (cur < N);
 
@@ -129,7 +158,7 @@ public:
 			{
 				signal_error("duplicate entry");
 			}
-			++cur;
+			probe(cur);
 		}
 
 		signal_error("hash is full");
@@ -151,7 +180,7 @@ public:
 			{
 				signal_error("there is no such key in the hash");
 			}
-			++cur;
+			probe(cur);
 		}
 		while (cur < N);
 
@@ -167,7 +196,7 @@ public:
 			{
 				signal_error("there is no suck key in the hash");
 			}
-			++cur;
+			probe(cur);
 		}
 
 		signal_error("hash is full");
@@ -280,6 +309,11 @@ private:
 		}
 
 		return -1;
+	}
+
+	void probe(int& index) const
+	{
+		++index;
 	}
 
 	using pair_type = std::pair<key_type, value_type>;
