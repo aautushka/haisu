@@ -51,6 +51,39 @@ private:
 };
 
 template <typename T>
+auto call_key(T& t, const char* first, const char* last, int) -> decltype(t.key(first, last), void())
+{
+	t.key(first, last);
+}
+
+template <typename T>
+void call_key(T&t, const char* first, const char* last, long)
+{
+}
+
+template <typename T>
+auto call_value(T& t, const char* first, const char* last, int) -> decltype(t.value(first, last), void())
+{
+	t.value(first, last);
+}
+
+template <typename T>
+void call_value(T&t, const char* first, const char* last, long)
+{
+}
+
+template <typename T>
+auto call_array(T& t, const char* first, const char* last, int) -> decltype(t.array(first, last), void())
+{
+	t.array(first, last);
+}
+
+template <typename T>
+void call_array(T&t, const char* first, const char* last, long)
+{
+}
+
+template <typename T>
 class parser
 {
 	enum state { ARR, OBJ };
@@ -64,17 +97,17 @@ public:
 	
 	void key(const char* str, const char* end)
 	{
-		static_cast<T*>(this)->key(str, end);
+		call_key(*static_cast<T*>(this), str, end, 0);
 	}
 
 	void value(const char* str, const char* end)
 	{
-		static_cast<T*>(this)->value(str, end);
+		call_value(*static_cast<T*>(this), str, end, 0);
 	}
 
 	void array(const char* str, const char* end)
 	{
-		static_cast<T*>(this)->array(str, end);
+		call_array(*static_cast<T*>(this), str, end, 0);
 	}
 
 	void parse(const char* str)
