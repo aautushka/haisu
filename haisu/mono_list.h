@@ -8,13 +8,15 @@ namespace haisu
 namespace mono
 {
 
-template <typename T, int N>
+template <typename T, int N, typename Offset = meta::memory_requirement_t<N>>
 class list
 {
-	using ptr_t = meta::memory_requirement_t<N>;
-	enum {nil = std::numeric_limits<ptr_t>::max()};
+	using offset_type = Offset;
+	enum {nil = std::numeric_limits<offset_type>::max()};
+	static_assert(std::numeric_limits<offset_type>::max() >= N, "");
+
 public:
-	using size_type = ptr_t;
+	using size_type = offset_type;
 	
 	constexpr list() noexcept
 	{
@@ -192,11 +194,11 @@ private:
 	struct node
 	{
 		T t;
-		ptr_t prev;
-		ptr_t next;
+		offset_type prev;
+		offset_type next;
 	};
 
-	void init(ptr_t n)
+	void init(offset_type n)
 	{
 		_head = n;
 		_tail = n;
@@ -226,7 +228,7 @@ private:
 		return _buf[_head];
 	}
 
-	node& at(ptr_t index)
+	node& at(offset_type index)
 	{
 		return _buf[index];
 	}
@@ -241,27 +243,27 @@ private:
 		return _buf[_head];
 	}
 
-	const node& at(ptr_t index) const
+	const node& at(offset_type index) const
 	{
 		return _buf[index];
 	}
 
-	ptr_t alloc()
+	offset_type alloc()
 	{
 		auto node = _free_list;
 		_free_list = _buf[node].next;
 		return node;
 	}
 
-	void free(ptr_t n)
+	void free(offset_type n)
 	{
 		at(n).next = _free_list;
 		_free_list = n;
 	}
 
-	ptr_t _free_list = 0;
-	ptr_t _head = nil;
-	ptr_t _tail = nil; 
+	offset_type _free_list = 0;
+	offset_type _head = nil;
+	offset_type _tail = nil; 
 	node _buf[N];
 };
 
