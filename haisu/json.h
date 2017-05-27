@@ -51,9 +51,9 @@ private:
 };
 
 template <typename T>
-auto call_key(T& t, const char* first, const char* last, int) -> decltype(t.key(first, last), void())
+auto call_key(T& t, const char* first, const char* last, int) -> decltype(t.on_key(first, last), void())
 {
-	t.key(first, last);
+	t.on_key(first, last);
 }
 
 template <typename T>
@@ -62,9 +62,9 @@ void call_key(T&t, const char* first, const char* last, long)
 }
 
 template <typename T>
-auto call_value(T& t, const char* first, const char* last, int) -> decltype(t.value(first, last), void())
+auto call_value(T& t, const char* first, const char* last, int) -> decltype(t.on_value(first, last), void())
 {
-	t.value(first, last);
+	t.on_value(first, last);
 }
 
 template <typename T>
@@ -73,9 +73,9 @@ void call_value(T&t, const char* first, const char* last, long)
 }
 
 template <typename T>
-auto call_array(T& t, const char* first, const char* last, int) -> decltype(t.array(first, last), void())
+auto call_array(T& t, const char* first, const char* last, int) -> decltype(t.on_array(first, last), void())
 {
-	t.array(first, last);
+	t.on_array(first, last);
 }
 
 template <typename T>
@@ -95,17 +95,17 @@ public:
 	void start_array();
 	void end_array();
 	
-	void key(const char* str, const char* end)
+	void on_key(const char* str, const char* end)
 	{
 		call_key(*static_cast<T*>(this), str, end, 0);
 	}
 
-	void value(const char* str, const char* end)
+	void on_value(const char* str, const char* end)
 	{
 		call_value(*static_cast<T*>(this), str, end, 0);
 	}
 
-	void array(const char* str, const char* end)
+	void on_array(const char* str, const char* end)
 	{
 		call_array(*static_cast<T*>(this), str, end, 0);
 	}
@@ -138,7 +138,7 @@ loop:
 					{
 						const char* const k = ++cur;
 						skip_to<'"'>(cur);
-						key(k, cur++);
+						on_key(k, cur++);
 						break;
 					}
 					case '}': // end of object
@@ -183,7 +183,7 @@ loop:
 					{
 						const char* const v = ++cur;
 						skip_to<'"'>(cur);
-						value(v, cur++);
+						on_value(v, cur++);
 						break;
 					}
 				}
@@ -228,41 +228,10 @@ loop:
 private:
 	void parse_array(const char*& cur)
 	{
-		++cur;
 		auto prev = ++cur;
 		skip_to<'"'>(cur);
-		array(prev, cur++);
+		on_array(prev, cur++);
 	}
-};
-
-class model : public parser<model>
-{
-public:
-	void key(const char* str, const char* end)
-	{
-		key_.assign(str, end);
-	}
-
-	void value(const char* str, const char* end)
-	{
-		pairs_[key_] = std::string(str, end);
-		key_.clear();
-	}
-
-	std::string operator [](const std::string& key) const
-	{
-		auto i = pairs_.find(key);
-		if (i != pairs_.end())
-		{
-			return i->second;
-		}
-
-		return "";
-	}
-
-private:
-	std::map<std::string, std::string> pairs_;
-	std::string key_;
 };
 
 } // namespace json
