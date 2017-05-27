@@ -15,13 +15,13 @@ const char* skip_blanks(const char* str)
 }
 
 template <char ch>
-const char* skip_to(const char* cur)
+const char* skip_to(const char* str)
 {
 	return strchr(str, ch);
 }
 
 template <char ch>
-const char* skip_past(const char* cur)
+const char* skip_past(const char* str)
 {
 	return 1 + strchr(str, ch);
 }
@@ -151,6 +151,7 @@ template <typename T>
 class parser
 {
 	enum state { ARR, OBJ };
+	enum key_val { KEY, VAL };
 
 public:
 	void start_object();
@@ -163,124 +164,63 @@ public:
 	{
 		bitstack<10> depth;
 		const char* cur = str;
-
-		cur = skip_blanks(cur);
-		if (*cur == '{')
-		{
-			call_on_new_object();
-			depth.push(OBJ);
-		}
-		else if (*cur == '[')
-		{
-			call_on_new_array();
-			depth.push(ARR);
-		}
-		++cur;
-
+		key_val kv = KEY;
 loop:
-		while (!depth.empty())
+		do
 		{
 			cur = skip_blanks(cur);
-			if (depth.top() == OBJ)
-			{
-				switch (*cur)
-				{
-					case '"': // key
-					{
-						const char* const k = ++cur;
-						cur = skip_to<'"'>(cur);
-						call_on_key(k, cur++);
-						break;
-					}
-					case '}': // end of object
-					{
-						++cur;
-						depth.pop();
-						call_on_object_end();
-						goto loop;
-					}
-					case ',': // next key-value pair
-					{
-						++cur;
-						goto loop;
-					}
-					case '[': // new array
-					{
-						++cur;
-						depth.push(ARR);
-						call_on_new_array();
-						continue;
-					}
-				}
 
-				cur = skip_past<':'>(cur);
-				cur = skip_blanks(cur);
-
-				switch (*cur)
-				{
-					case '{': // new object
-					{
-						cur = skip_blanks(cur);
-						++cur;
-						depth.push(OBJ);
-						call_on_new_object();
-						goto loop;
-					}
-					case '[': // new array
-					{
-						cur = skip_blanks(cur);
-						++cur;
-						depth.push(ARR);
-						call_on_new_array();
-						goto loop;
-					}
-					case '"': // new value
-					{
-						const char* const v = ++cur;
-						cur = skip_to<'"'>(cur);
-						call_on_value(v, cur++);
-						break;
-					}
-				}
-			}
-			else if (depth.top() == ARR)
+			switch (*cur)
 			{
-				switch (*cur)
-				{
-					case '"': // array item
+				case '{': // new object
+					kv = KEY;
+					call_on_new_object();
+					depth.push(OBJ);
+					break;
+				case '[': // new array
+					kv = KEY;
+					call_on_new_array();
+					depth.push(ARR);
+					break;
+				case '"': // object key, or array item
 					{
-						parse_array(cur);
-						break;
-					}
-					case ']': // end array
+					auto k = ++cur;
+					cur = skip_to<'"'>(cur);
+					if (depth.top() == OBJ)
 					{
-						++cur;
-						depth.pop();
-						call_on_array_end();
-						goto loop;
+						if (kv == KEY)
+						{
+							call_on_key(k, cur);
+						}
+						else 
+						{
+							call_on_value(k, cur);
+							kv = KEY;
+						}
 					}
-					case ',': // next item
+					else
 					{
-						++cur;
-						goto loop;
+						call_on_array(k, cur);
 					}
-					case '[': // new array
-					{
-						++cur;
-						depth.push(ARR);
-						call_on_new_array();
-						goto loop;
 					}
-					case '{': // new object
-					{
-						++cur;
-						depth.push(OBJ);
-						call_on_new_object();
-						goto loop;
-					}
-				}
+					break;
+				case '}': // object end
+					call_on_object_end();
+					depth.pop();
+					break;
+				case ']': // array end
+					call_on_array_end();
+					depth.pop();
+					break;
+				case ',':
+					break;
+				case ':':
+					kv = VAL;
+					break;
 			}
+			++cur;
 		}
+		while (!depth.empty());
 	}
 
 private:
