@@ -94,3 +94,17 @@ TEST_F(json_test, parses_array_of_single_item)
 	EXPECT_EQ("a", arr[0]);
 }
 
+TEST_F(json_test, parses_array_of_single_item)
+{
+	arr.parse("[\"a\"]");
+	EXPECT_EQ("a", arr[0]);
+}
+
+TEST_F(json_test, reads_array_of_many_items)
+{
+	arr.parse("[\"a\", \"b\"]");
+
+	EXPECT_EQ("a", arr[0]);
+	EXPECT_EQ("a", arr[1]);
+}
+
