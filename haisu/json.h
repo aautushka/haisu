@@ -113,6 +113,39 @@ auto call_array_end(T& t, int) -> decltype(t.on_array_end(), void())
 
 template <typename T> void call_array_end(T&, long) {}
 
+template <int N>
+class bitstack
+{
+public:
+	using size_type = meta::memory_requirement_t<N>;
+	bool top() const
+	{
+		assert(size_ > 0);
+		return bits_[size_ - 1];
+	}
+
+	void push(bool b)
+	{
+		assert(size_ < N);
+		bits_[size_++] = b;
+	}
+
+	void pop()
+	{
+		assert(size_ > 0);
+		--size_;
+	}
+
+	bool empty() const
+	{
+		return !size_;
+	}
+
+private:
+	size_type size_ = 0;
+	bool bits_[N];
+};
+
 template <typename T>
 class parser
 {
@@ -127,7 +160,7 @@ public:
 	
 	void parse(const char* str)
 	{
-		mono::stack<int8_t, 10> depth;
+		bitstack<10> depth;
 		const char* cur = str;
 
 		skip_blanks(cur);
