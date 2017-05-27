@@ -78,10 +78,39 @@ auto call_array(T& t, const char* first, const char* last, int) -> decltype(t.on
 	t.on_array(first, last);
 }
 
+template <typename T> void call_array(T&, const char*, const char*, long) { }
+
 template <typename T>
-void call_array(T&t, const char* first, const char* last, long)
+auto call_new_object(T& t, int) -> decltype(t.on_new_object(), void())
 {
+	t.on_new_object();
 }
+
+template <typename T> void call_new_object(T&, long) {}
+
+template <typename T>
+auto call_new_array(T& t, int) -> decltype(t.on_new_array(), void())
+{
+	t.on_new_array();
+}
+
+template <typename T> void call_new_array(T& t, long) {}
+
+template <typename T>
+auto call_object_end(T& t, int) -> decltype(t.on_object_end(), void())
+{
+	t.on_object_end();
+}
+
+template <typename T> void call_object_end(T&, long) {}
+
+template <typename T>
+auto call_array_end(T& t, int) -> decltype(t.on_array_end(), void())
+{
+	t.on_array_end();
+}
+
+template <typename T> void call_array_end(T&, long) {}
 
 template <typename T>
 class parser
@@ -95,21 +124,6 @@ public:
 	void start_array();
 	void end_array();
 	
-	void on_key(const char* str, const char* end)
-	{
-		call_key(*static_cast<T*>(this), str, end, 0);
-	}
-
-	void on_value(const char* str, const char* end)
-	{
-		call_value(*static_cast<T*>(this), str, end, 0);
-	}
-
-	void on_array(const char* str, const char* end)
-	{
-		call_array(*static_cast<T*>(this), str, end, 0);
-	}
-
 	void parse(const char* str)
 	{
 		mono::stack<int8_t, 10> depth;
@@ -118,10 +132,12 @@ public:
 		skip_blanks(cur);
 		if (*cur == '{')
 		{
+			call_on_new_object();
 			depth.push(OBJ);
 		}
 		else if (*cur == '[')
 		{
+			call_on_new_array();
 			depth.push(ARR);
 		}
 		++cur;
@@ -138,13 +154,14 @@ loop:
 					{
 						const char* const k = ++cur;
 						skip_to<'"'>(cur);
-						on_key(k, cur++);
+						call_on_key(k, cur++);
 						break;
 					}
 					case '}': // end of object
 					{
 						++cur;
 						depth.pop();
+						call_on_object_end();
 						goto loop;
 					}
 					case ',': // next key-value pair
@@ -156,6 +173,7 @@ loop:
 					{
 						++cur;
 						depth.push(ARR);
+						call_on_new_array();
 						continue;
 					}
 				}
@@ -170,6 +188,7 @@ loop:
 						skip_blanks(cur);
 						++cur;
 						depth.push(OBJ);
+						call_on_new_object();
 						goto loop;
 					}
 					case '[': // new array
@@ -177,13 +196,14 @@ loop:
 						skip_blanks(cur);
 						++cur;
 						depth.push(ARR);
+						call_on_new_array();
 						goto loop;
 					}
 					case '"': // new value
 					{
 						const char* const v = ++cur;
 						skip_to<'"'>(cur);
-						on_value(v, cur++);
+						call_on_value(v, cur++);
 						break;
 					}
 				}
@@ -192,32 +212,35 @@ loop:
 			{
 				switch (*cur)
 				{
-					case '"':
+					case '"': // array item
 					{
 						parse_array(cur);
 						break;
 					}
-					case ']':
+					case ']': // end array
 					{
 						++cur;
 						depth.pop();
+						call_on_array_end();
 						goto loop;
 					}
-					case ',':
+					case ',': // next item
 					{
 						++cur;
 						goto loop;
 					}
-					case '[':
+					case '[': // new array
 					{
 						++cur;
 						depth.push(ARR);
+						call_on_new_array();
 						goto loop;
 					}
-					case '{':
+					case '{': // new object
 					{
 						++cur;
 						depth.push(OBJ);
+						call_on_new_object();
 						goto loop;
 					}
 				}
@@ -226,12 +249,64 @@ loop:
 	}
 
 private:
+	void call_on_key(const char* str, const char* end)
+	{
+		call_key(*static_cast<T*>(this), str, end, 0);
+	}
+
+	void call_on_value(const char* str, const char* end)
+	{
+		call_value(*static_cast<T*>(this), str, end, 0);
+	}
+
+	void call_on_array(const char* str, const char* end)
+	{
+		call_array(*static_cast<T*>(this), str, end, 0);
+	}
+
+	void call_on_new_object()
+	{
+		call_new_object(*static_cast<T*>(this), 0);
+	}
+
+	void call_on_new_array()
+	{
+		call_new_array(*static_cast<T*>(this), 0);
+	}
+
+	void call_on_object_end()
+	{
+		call_object_end(*static_cast<T*>(this), 0);
+	}
+
+	void call_on_array_end()
+	{
+		call_array_end(*static_cast<T*>(this), 0);
+	}
+
 	void parse_array(const char*& cur)
 	{
 		auto prev = ++cur;
 		skip_to<'"'>(cur);
-		on_array(prev, cur++);
+		call_on_array(prev, cur++);
 	}
+};
+
+class model : public parser<model>
+{
+public:
+	void on_key(const char* str, const char* end)
+	{
+	}
+
+	void on_value(const char* str, const char* end)
+	{
+	}
+
+	void on_array(const char* str, const char* end)
+	{
+	}
+private:
 };
 
 } // namespace json
