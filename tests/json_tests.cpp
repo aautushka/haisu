@@ -110,3 +110,16 @@ TEST_F(json_test, skips_blanks_when_reading_array)
 	EXPECT_EQ("b", arr[1]);
 }
 
+TEST_F(json_test, reads_array_inside_of_object)
+{
+	arr.parse("{\"a\": [\"b\"]}");
+
+	EXPECT_EQ("b", arr[0]);
+}
+
+TEST_F(json_test, reads_object_embedded_in_array)
+{
+	json.parse("[[[{\"a\": \"b\"}]]]");
+
+	EXPECT_EQ("b", json["a"]);
+}

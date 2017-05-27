@@ -306,6 +306,22 @@ public:
 	void on_array(const char* str, const char* end)
 	{
 	}
+
+	void on_new_object()
+	{
+	}
+
+	void on_new_array()
+	{
+	}
+
+	void on_object_end()
+	{
+	}
+
+	void on_array_end()
+	{
+	}
 private:
 };
 
