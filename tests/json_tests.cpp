@@ -8,12 +8,21 @@ class object : public haisu::json::parser<object>
 public:
 	void on_key(const char* str, const char* end)
 	{
-		path_.push_back(std::string(str, end));
+		path_.back() = std::string(str, end);
 	}
 
 	void on_value(const char* str, const char* end)
 	{
 		tree_[path_] = std::string(str, end);
+	}
+
+	void on_new_object()
+	{
+		path_.push_back(std::string());
+	}
+
+	void on_object_end()
+	{
 		path_.pop_back();
 	}
 
@@ -88,6 +97,17 @@ TEST_F(json_test, parses_nested_object)
 
 	auto p = path{"a", "b"};
 	EXPECT_EQ("c", json[p]);
+}
+
+TEST_F(json_test, parses_same_level_nested_objs)
+{
+	json.parse("{\"a\" : {\"b\":\"c\"}, \"d\" : {\"e\":{\"f\":\"g\"}}}");
+
+	auto p1 = path{"a", "b"};
+	auto p2 = path{"d", "e", "f"};
+
+	EXPECT_EQ("c", json[p1]);
+	EXPECT_EQ("g", json[p2]);
 }
 
 TEST_F(json_test, ignores_blanks_when_parsing)
