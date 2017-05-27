@@ -1,4 +1,5 @@
 #pragma once
+#include <cstring>
 
 #include "haisu/mono_stack.h"
 

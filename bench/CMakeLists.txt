@@ -6,7 +6,8 @@ set(SRC
   main.cpp
   # zset_bench
   # partition_bench
-  mono_hash_bench
+  # mono_hash_bench
+  json_bench
 ) 
 
 add_executable(bench ${SRC})
