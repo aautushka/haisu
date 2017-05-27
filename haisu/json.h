@@ -8,21 +8,22 @@ namespace haisu
 namespace json
 {
 
-void skip_blanks(const char*& str)
+const char* skip_blanks(const char* str)
 {
 	while (*str == ' ') ++str;
+	return str;
 }
 
 template <char ch>
-void skip_to(const char*& str)
+const char* skip_to(const char* cur)
 {
-	str = strchr(str, ch);
+	return strchr(str, ch);
 }
 
 template <char ch>
-void skip_past(const char*& str)
+const char* skip_past(const char* cur)
 {
-	str = 1 + strchr(str, ch);
+	return 1 + strchr(str, ch);
 }
 
 template <typename T>
@@ -163,7 +164,7 @@ public:
 		bitstack<10> depth;
 		const char* cur = str;
 
-		skip_blanks(cur);
+		cur = skip_blanks(cur);
 		if (*cur == '{')
 		{
 			call_on_new_object();
@@ -179,7 +180,7 @@ public:
 loop:
 		while (!depth.empty())
 		{
-			skip_blanks(cur);
+			cur = skip_blanks(cur);
 			if (depth.top() == OBJ)
 			{
 				switch (*cur)
@@ -187,7 +188,7 @@ loop:
 					case '"': // key
 					{
 						const char* const k = ++cur;
-						skip_to<'"'>(cur);
+						cur = skip_to<'"'>(cur);
 						call_on_key(k, cur++);
 						break;
 					}
@@ -212,14 +213,14 @@ loop:
 					}
 				}
 
-				skip_past<':'>(cur);
-				skip_blanks(cur);
+				cur = skip_past<':'>(cur);
+				cur = skip_blanks(cur);
 
 				switch (*cur)
 				{
 					case '{': // new object
 					{
-						skip_blanks(cur);
+						cur = skip_blanks(cur);
 						++cur;
 						depth.push(OBJ);
 						call_on_new_object();
@@ -227,7 +228,7 @@ loop:
 					}
 					case '[': // new array
 					{
-						skip_blanks(cur);
+						cur = skip_blanks(cur);
 						++cur;
 						depth.push(ARR);
 						call_on_new_array();
@@ -236,7 +237,7 @@ loop:
 					case '"': // new value
 					{
 						const char* const v = ++cur;
-						skip_to<'"'>(cur);
+						cur = skip_to<'"'>(cur);
 						call_on_value(v, cur++);
 						break;
 					}
@@ -321,7 +322,7 @@ private:
 	void parse_array(const char*& cur)
 	{
 		auto prev = ++cur;
-		skip_to<'"'>(cur);
+		cur = skip_to<'"'>(cur);
 		call_on_array(prev, cur++);
 	}
 };
