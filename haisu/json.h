@@ -115,7 +115,7 @@ auto call_array_end(T& t, int) -> decltype(t.on_array_end(), void())
 template <typename T> void call_array_end(T&, long) {}
 
 template <int N>
-class bitstack
+class boolstack
 {
 public:
 	using size_type = meta::memory_requirement_t<N>;
@@ -147,6 +147,63 @@ private:
 	bool bits_[N];
 };
 
+template <int N>
+class bitstack
+{
+	enum { storage_size = N % 8 ? N / 8 + 1 : N / 8 }; 
+public:
+	bool empty() const
+	{
+		return pos_ < 0;
+	}
+
+	template <bool Flag>
+	void push()
+	{
+		mask_ <<= 1;
+		if (!mask_)
+		{
+			mask_ = 1;
+			++pos_;
+			bits_[pos_] = 0;
+		}
+
+		using tag = std::conditional_t<Flag, std::true_type, std::false_type>;
+		push_flag(tag());
+	}
+	
+	void pop()
+	{
+		assert(!empty());
+		mask_ >>= 1;
+		if (!mask_)
+		{
+			mask_ = 0x80000000;
+			--pos_;
+		}
+	}
+
+	bool top()
+	{
+		assert(!empty());
+		return bits_[pos_] & mask_;
+	}
+
+private:
+	void push_flag(std::true_type)
+	{
+		bits_[pos_] |= mask_; 
+	}
+
+	void push_flag(std::false_type)
+	{
+	}
+
+	uint32_t bits_[storage_size];
+	uint32_t mask_ = 0;
+	int pos_ = -1;
+};
+
 template <typename T>
 class parser
 {
@@ -175,18 +232,18 @@ loop:
 				case '{': // new object
 					kv = KEY;
 					call_on_new_object();
-					depth.push(OBJ);
+					depth.push<true>();
 					break;
 				case '[': // new array
 					kv = KEY;
 					call_on_new_array();
-					depth.push(ARR);
+					depth.push<false>();
 					break;
 				case '"': // object key, or array item
 					{
 					auto k = ++cur;
 					cur = skip_to<'"'>(cur);
-					if (depth.top() == OBJ)
+					if (depth.top())
 					{
 						if (kv == KEY)
 						{
