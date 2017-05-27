@@ -44,7 +44,7 @@ public:
 	}
 
 	template <typename T>
-	const value_type& operator [](const std::vector<key_type>& key) const
+	const value_type& operator [](const T& key) const
 	{
 		return child(key)->get();
 	}
@@ -205,8 +205,8 @@ private:
 	template <typename T>
 	const tree* child(const T& key) const
 	{
-		self_type* tr = this;
-		for (auto k : key) tr = tr->child(k);
+		const self_type* tr = this;
+		for (auto& k : key) tr = tr->child(k);
 		return tr;
 	}
 

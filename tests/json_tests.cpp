@@ -1,35 +1,41 @@
 #include <gtest/gtest.h>
 
 #include "haisu/json.h"
+#include "haisu/tree.h"
 
 class object : public haisu::json::parser<object>
 {
 public:
 	void on_key(const char* str, const char* end)
 	{
-		key_.assign(str, end);
+		path_.push_back(std::string(str, end));
 	}
 
 	void on_value(const char* str, const char* end)
 	{
-		pairs_[key_] = std::string(str, end);
-		key_.clear();
+		tree_[path_] = std::string(str, end);
+		path_.pop_back();
 	}
 
 	std::string operator [](const std::string& key) const
 	{
-		auto i = pairs_.find(key);
-		if (i != pairs_.end())
-		{
-			return i->second;
-		}
+		return tree_[key];
+	}
 
-		return "";
+	std::string operator [](const char* key) const
+	{
+		return tree_[std::string(key)];
+	}
+
+	template <typename T>
+	std::string operator [](const T& t) const
+	{
+		return tree_[t];
 	}
 
 private:
-	std::map<std::string, std::string> pairs_;
-	std::string key_;
+	std::vector<std::string> path_;
+	haisu::tree<std::string, std::string> tree_;
 };
 
 class array : public haisu::json::parser<array>
@@ -56,6 +62,7 @@ private:
 
 struct json_test : ::testing::Test
 {
+	using path = std::vector<std::string>;
 	object json;
 	array arr;
 
@@ -79,7 +86,8 @@ TEST_F(json_test, parses_nested_object)
 {
 	json.parse("{\"a\":{\"b\":\"c\"}}");
 
-	EXPECT_EQ("c", json["b"]);
+	auto p = path{"a", "b"};
+	EXPECT_EQ("c", json[p]);
 }
 
 TEST_F(json_test, ignores_blanks_when_parsing)
