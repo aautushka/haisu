@@ -102,3 +102,11 @@ TEST_F(json_test, reads_array_of_many_items)
 	EXPECT_EQ("b", arr[1]);
 }
 
+TEST_F(json_test, skips_blanks_when_reading_array)
+{
+	arr.parse(" [ \"a\" , \"b\" ] ");
+
+	EXPECT_EQ("a", arr[0]);
+	EXPECT_EQ("b", arr[1]);
+}
+
