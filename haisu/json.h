@@ -10,20 +10,23 @@ namespace json
 
 const char* skip_blanks(const char* str)
 {
-	while (*str == ' ') ++str;
+	//while (*str <= 0x20 && (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')) ++str;
+	while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n') ++str;
 	return str;
 }
 
 template <char ch>
 const char* skip_to(const char* str)
 {
-	return strchr(str, ch);
+	while (*str && *str != ch) ++str;
+	return str;
 }
 
 template <char ch>
 const char* skip_past(const char* str)
 {
-	return 1 + strchr(str, ch);
+	auto ret = skip_to<ch>;
+	return ret + (*ret ? 1 : 0);
 }
 
 template <typename T>
@@ -131,6 +134,12 @@ public:
 		bits_[size_++] = b;
 	}
 
+	template <bool B>
+	void push()
+	{
+		push(B);
+	}
+
 	void pop()
 	{
 		assert(size_ > 0);
@@ -204,6 +213,57 @@ private:
 	int pos_ = -1;
 };
 
+template <int N>
+class nibblestack
+{
+public:
+	using size_type = meta::memory_requirement_t<N / 2>;
+
+	bool empty() const
+	{
+		return size_ == 0;
+	}
+
+	bool top() const
+	{
+		assert(size_ > 0);
+		return bits_[size_ - 1] & mask_;
+	}
+
+	template <bool Flag>
+	void push()
+	{
+		size_ += ((mask_ ^ 0xf0) + 1);
+		mask_ ^= 0xff;
+		
+		using tag = std::conditional_t<Flag, std::true_type, std::false_type>;
+		push_flag(tag());
+	}
+
+	void pop()
+	{
+		size_ -= ((mask_ ^ 0x0f) + 1);
+		mask_ ^= 0xff;
+	}
+
+private:
+	static_assert(0 == N % 2, "");
+
+	void push_flag(std::true_type)
+	{
+		bits_[size_ - 1] |= (mask_ & 0xff);
+	}
+
+	void push_flag(std::false_type)
+	{
+		bits_[size_ - 1] &= (mask_ ^ 0xff);
+	}
+
+	size_type size_ = 0;
+	uint8_t mask_ = 0xf0;
+	uint8_t bits_[N / 2];
+};
+
 template <typename T>
 class parser
 {
@@ -219,7 +279,7 @@ public:
 	
 	void parse(const char* str)
 	{
-		bitstack<10> depth;
+		boolstack<10> depth;
 		const char* cur = str;
 		key_val kv = KEY;
 loop:
@@ -277,7 +337,7 @@ loop:
 			}
 			++cur;
 		}
-		while (!depth.empty());
+		while (*cur);
 	}
 
 private:
