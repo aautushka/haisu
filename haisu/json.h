@@ -128,16 +128,11 @@ public:
 		return bits_[size_ - 1];
 	}
 
-	void push(bool b)
-	{
-		assert(size_ < N);
-		bits_[size_++] = b;
-	}
-
 	template <bool B>
 	void push()
 	{
-		push(B);
+		assert(size_ < N);
+		bits_[size_++] = B;
 	}
 
 	void pop()
@@ -264,6 +259,41 @@ private:
 	uint8_t bits_[N / 2];
 };
 
+template <int N>
+class objstack
+{
+public:
+	void push_array()
+	{
+		stack_.template push<true>();
+		//stack_.push(true);
+	}
+
+	void push_object()
+	{
+		stack_.template push<false>();
+		//stack_.push(false);
+	}
+
+	bool is_object_on_top() const
+	{
+		return !stack_.top();	
+	}
+
+	bool is_array_on_top() const
+	{
+		return stack_.top();
+	}
+
+	void pop()
+	{
+		stack_.pop();
+	}
+
+private:
+	boolstack<N> stack_;
+};
+
 template <typename T>
 class parser
 {
@@ -279,7 +309,7 @@ public:
 	
 	void parse(const char* str)
 	{
-		boolstack<10> depth;
+		objstack<10> depth;
 		const char* cur = str;
 		key_val kv = KEY;
 loop:
@@ -292,18 +322,18 @@ loop:
 				case '{': // new object
 					kv = KEY;
 					call_on_new_object();
-					depth.push<true>();
+					depth.push_object();
 					break;
 				case '[': // new array
 					kv = KEY;
 					call_on_new_array();
-					depth.push<false>();
+					depth.push_array();
 					break;
 				case '"': // object key, or array item
 					{
 					auto k = ++cur;
 					cur = skip_to<'"'>(cur);
-					if (depth.top())
+					if (depth.is_object_on_top())
 					{
 						if (kv == KEY)
 						{
