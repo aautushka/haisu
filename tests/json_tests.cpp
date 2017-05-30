@@ -151,3 +151,9 @@ TEST_F(json_test, reads_object_embedded_in_array)
 
 	EXPECT_EQ("b", json["a"]);
 }
+
+TEST_F(json_test, parses_partial_json)
+{
+	json.parse("{\"a\":\"b\", ");
+	EXPECT_EQ("b", json["a"]);
+}
