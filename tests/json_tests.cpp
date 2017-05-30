@@ -185,3 +185,22 @@ TEST_F(json_test, skips_false_value)
 
 	EXPECT_EQ("a", arr[0]);
 }*/
+
+TEST_F(json_test, understands_escaped_quote_character_inside_of_string)
+{
+	json.parse("{'a\\'c':'b'}");
+	EXPECT_EQ("b", json["a\\'c"]);
+}
+
+TEST_F(json_test, does_not_confuse_escaped_backslash_with_quote)
+{
+	json.parse("{'a\\\\':'b'}");
+	EXPECT_EQ("b", json["a\\\\"]);
+}
+
+TEST_F(json_test, parses_multiple_escape_sequences)
+{
+	json.parse("{'a\\\\\\'c':'b'}");
+	EXPECT_EQ("b", json["a\\\\\\'c"]);
+}
+

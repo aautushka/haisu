@@ -37,6 +37,32 @@ const char* skip_to(char ch, const char* str)
 	return str;
 }
 
+bool preceded_by_even_number_of_backslashes(const char* str)
+{
+	int ret = 1;
+	while (*str-- == '\\')
+	{
+		ret ^= 1;
+	}
+	
+	return ret;
+}
+
+const char* skip_to_end_of_string(char quote, const char* str)
+{
+	while (true)
+	{
+		str = skip_to(quote, str);
+		if (*str && str[-1] == '\\' && preceded_by_even_number_of_backslashes(str - 2))
+		{
+			++str;	
+			continue;
+		}
+		break;
+	}
+	return str;
+}
+
 template <char ch>
 const char* skip_to(const char* str)
 {
@@ -413,7 +439,7 @@ loop:
 					{
 						const auto quote = *s;
 						const auto k = ++s;
-						s = skip_to(quote, s);
+						s = skip_to_end_of_string(quote, s);
 						if (depth.is_object_on_top())
 						{
 							if (kv == KEY)
