@@ -3,6 +3,13 @@
 
 #include "haisu/mono_stack.h"
 
+// TODO
+// null value
+// bool value
+// integer value
+// squote enclosed strings
+// escaped quotes inside of a string
+
 namespace haisu
 {
 namespace json
@@ -10,16 +17,20 @@ namespace json
 
 const char* skip_blanks(const char* str)
 {
-	//while (*str <= 0x20 && (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')) ++str;
 	while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n') ++str;
+	return str;
+}
+
+const char* skip_to(char ch, const char* str)
+{
+	while (*str && *str != ch) ++str;
 	return str;
 }
 
 template <char ch>
 const char* skip_to(const char* str)
 {
-	while (*str && *str != ch) ++str;
-	return str;
+	return skip_to(ch, str);
 }
 
 template <char ch>
@@ -266,13 +277,11 @@ public:
 	void push_array()
 	{
 		stack_.template push<true>();
-		//stack_.push(true);
 	}
 
 	void push_object()
 	{
 		stack_.template push<false>();
-		//stack_.push(false);
 	}
 
 	bool is_object_on_top() const
@@ -309,7 +318,7 @@ public:
 	
 	void parse(const char* str)
 	{
-		objstack<10> depth;
+		objstack<32> depth;
 		const char* cur = str;
 		key_val kv = KEY;
 loop:
@@ -329,26 +338,28 @@ loop:
 					call_on_new_array();
 					depth.push_array();
 					break;
+				case '\'': // object key, or array item
 				case '"': // object key, or array item
 					{
-					auto k = ++cur;
-					cur = skip_to<'"'>(cur);
-					if (depth.is_object_on_top())
-					{
-						if (kv == KEY)
+						const auto quote = *cur;
+						const auto k = ++cur;
+						cur = skip_to(quote, cur);
+						if (depth.is_object_on_top())
 						{
-							call_on_key(k, cur);
+							if (kv == KEY)
+							{
+								call_on_key(k, cur);
+							}
+							else 
+							{
+								call_on_value(k, cur);
+								kv = KEY;
+							}
 						}
-						else 
+						else
 						{
-							call_on_value(k, cur);
-							kv = KEY;
+							call_on_array(k, cur);
 						}
-					}
-					else
-					{
-						call_on_array(k, cur);
-					}
 					}
 					break;
 				case '}': // object end
@@ -404,13 +415,6 @@ private:
 	void call_on_array_end()
 	{
 		call_array_end(*static_cast<T*>(this), 0);
-	}
-
-	void parse_array(const char*& cur)
-	{
-		auto prev = ++cur;
-		cur = skip_to<'"'>(cur);
-		call_on_array(prev, cur++);
 	}
 };
 

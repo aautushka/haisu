@@ -157,3 +157,10 @@ TEST_F(json_test, parses_partial_json)
 	json.parse("{\"a\":\"b\", ");
 	EXPECT_EQ("b", json["a"]);
 }
+
+TEST_F(json_test, parses_single_quoted_strings)
+{
+	json.parse("{'a':'b'}");
+	EXPECT_EQ("b", json["a"]);
+}
+
