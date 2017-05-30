@@ -164,3 +164,24 @@ TEST_F(json_test, parses_single_quoted_strings)
 	EXPECT_EQ("b", json["a"]);
 }
 
+/*TEST_F(json_test, skips_null_value)
+{
+	arr.parse("[null,'a','b']");
+
+	EXPECT_EQ("a", arr[0]);
+	EXPECT_EQ("b", arr[1]);
+}
+
+TEST_F(json_test, skips_true_value)
+{
+	arr.parse("[true,'a']");
+
+	EXPECT_EQ("a", arr[0]);
+}
+
+TEST_F(json_test, skips_false_value)
+{
+	arr.parse("[false,'a']");
+
+	EXPECT_EQ("a", arr[0]);
+}*/

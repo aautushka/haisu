@@ -15,9 +15,19 @@ namespace haisu
 namespace json
 {
 
+static inline bool is_blank(char ch)
+{
+	return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
+}
+
+static inline bool is_separator(char ch)
+{
+	return is_blank(ch) || ch == '}' || ch == ']' || ch == ',';
+}
+
 const char* skip_blanks(const char* str)
 {
-	while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n') ++str;
+	while (is_blank(*str)) ++str;
 	return str;
 }
 
@@ -198,7 +208,7 @@ public:
 		}
 	}
 
-	bool top()
+	bool top() const
 	{
 		assert(!empty());
 		return bits_[pos_] & mask_;
@@ -303,6 +313,66 @@ private:
 	boolstack<N> stack_;
 };
 
+template <int N>
+class compressed_objstack
+{
+public:
+	void push_array()
+	{
+		if (is_array_on_top())
+		{
+			assert(stack_[size_] != 0x7f);
+			++stack_[size_];
+		}
+		else
+		{
+			assert(size_ < N);
+			++size_;
+			stack_[size_] = 0x01;
+		}
+	}
+
+	void push_object()
+	{
+		if (is_object_on_top())
+		{
+			assert(stack_[size_] != 0xff);
+			++stack_[size_];
+		}
+		else
+		{
+			assert(size_ < N);
+			++size_;
+			stack_[size_] = 0x81;
+		}
+	}
+
+	void pop()
+	{
+		assert(size_ >= 0);	
+		stack_[size_] -= 1;
+		if (!(stack_[size_] & 0x7f))
+		{
+			--size_;
+		}
+	}
+
+	bool is_object_on_top() const
+	{
+		return stack_[size_] & 0x80;
+	}
+
+	bool is_array_on_top() const
+	{
+		return !is_object_on_top();
+	}
+	
+
+private:
+	int size_ = -1;
+	uint8_t stack_[N];	
+};
+
 template <typename T>
 class parser
 {
@@ -316,17 +386,17 @@ public:
 	void start_array();
 	void end_array();
 	
-	void parse(const char* str)
+	void parse(const char* s)
 	{
+		//compressed_objstack<32> depth;
 		objstack<32> depth;
-		const char* cur = str;
 		key_val kv = KEY;
 loop:
 		do
 		{
-			cur = skip_blanks(cur);
+			s = skip_blanks(s);
 
-			switch (*cur)
+			switch (*s)
 			{
 				case '{': // new object
 					kv = KEY;
@@ -341,24 +411,24 @@ loop:
 				case '\'': // object key, or array item
 				case '"': // object key, or array item
 					{
-						const auto quote = *cur;
-						const auto k = ++cur;
-						cur = skip_to(quote, cur);
+						const auto quote = *s;
+						const auto k = ++s;
+						s = skip_to(quote, s);
 						if (depth.is_object_on_top())
 						{
 							if (kv == KEY)
 							{
-								call_on_key(k, cur);
+								call_on_key(k, s);
 							}
 							else 
 							{
-								call_on_value(k, cur);
+								call_on_value(k, s);
 								kv = KEY;
 							}
 						}
 						else
 						{
-							call_on_array(k, cur);
+							call_on_array(k, s);
 						}
 					}
 					break;
@@ -375,10 +445,46 @@ loop:
 				case ':':
 					kv = VAL;
 					break;
+				default:
+					/*switch (*s)
+					{
+						case 'n': // null
+							if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
+							{
+								s += 4;
+							}
+							break;
+						case 't': // true
+							if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
+							{
+								s += 3;
+							}
+							break;
+						case 'f': // false
+							if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
+							{
+								s += 5;
+							}
+							break;
+						case '0':
+						case '1':
+						case '2':
+						case '3':
+						case '4':
+						case '5':
+						case '6':
+						case '7':
+						case '8':
+						case '9':
+						case '-':
+							break;
+					}*/
+
+					break;
 			}
-			++cur;
+			++s;
 		}
-		while (*cur);
+		while (*s);
 	}
 
 private:
