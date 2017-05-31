@@ -223,6 +223,18 @@ public:
 		push_flag(tag());
 	}
 
+	void push(bool flag)
+	{
+		if (flag)
+		{
+			push<true>();
+		}
+		else
+		{
+			push<false>();
+		}
+	}
+
 	void pop()
 	{
 		assert(!empty());
