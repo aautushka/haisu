@@ -29,6 +29,7 @@ set(SRC
   synchronized_tests
   mono_hash_tests
   json_tests
+  json_bitstack_tests
 )
 
 add_executable(tests ${SRC})

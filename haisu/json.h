@@ -15,29 +15,29 @@ namespace haisu
 namespace json
 {
 
-static inline bool is_blank(char ch)
+inline bool is_blank(char ch)
 {
 	return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
 }
 
-static inline bool is_separator(char ch)
+inline bool is_separator(char ch)
 {
 	return is_blank(ch) || ch == '}' || ch == ']' || ch == ',';
 }
 
-const char* skip_blanks(const char* str)
+inline const char* skip_blanks(const char* str)
 {
 	while (is_blank(*str)) ++str;
 	return str;
 }
 
-const char* skip_to(char ch, const char* str)
+inline const char* skip_to(char ch, const char* str)
 {
 	while (*str && *str != ch) ++str;
 	return str;
 }
 
-bool preceded_by_even_number_of_backslashes(const char* str)
+inline bool preceded_by_even_number_of_backslashes(const char* str)
 {
 	int ret = 1;
 	while (*str-- == '\\')
@@ -48,7 +48,7 @@ bool preceded_by_even_number_of_backslashes(const char* str)
 	return ret;
 }
 
-const char* skip_to_end_of_string(char quote, const char* str)
+inline const char* skip_to_end_of_string(char quote, const char* str)
 {
 	while (true)
 	{
@@ -201,7 +201,7 @@ private:
 template <int N>
 class bitstack
 {
-	enum { storage_size = N % 8 ? N / 8 + 1 : N / 8 }; 
+	enum { storage_size = N % 64 ? N / 64 + 1 : N / 64 }; 
 public:
 	bool empty() const
 	{
@@ -222,14 +222,14 @@ public:
 		using tag = std::conditional_t<Flag, std::true_type, std::false_type>;
 		push_flag(tag());
 	}
-	
+
 	void pop()
 	{
 		assert(!empty());
 		mask_ >>= 1;
 		if (!mask_)
 		{
-			mask_ = 0x80000000;
+			mask_ = 0x8000000000000000;
 			--pos_;
 		}
 	}
@@ -238,6 +238,11 @@ public:
 	{
 		assert(!empty());
 		return bits_[pos_] & mask_;
+	}
+
+	constexpr int capacity() const
+	{
+		return N;
 	}
 
 private:
@@ -250,9 +255,51 @@ private:
 	{
 	}
 
-	uint32_t bits_[storage_size];
-	uint32_t mask_ = 0;
+	uint64_t bits_[storage_size];
+	uint64_t mask_ = 0;
 	int pos_ = -1;
+};
+
+template <>
+class bitstack<63>
+{
+public:
+	constexpr bool top() const
+	{
+		return bits_ & mask_;
+	}
+
+	constexpr void pop()
+	{
+		mask_ >>= 1;
+	}
+
+	template <bool Flag>
+	constexpr void push()
+	{
+		mask_ <<= 1;
+		using tag = std::conditional_t<Flag, std::true_type, std::false_type>;
+		push_flag(tag());
+	}
+
+	constexpr int capacity() const
+	{
+		return 63;
+	}
+
+private:
+	constexpr void push_flag(std::true_type)
+	{
+		bits_ |= mask_;
+	}
+
+	constexpr void push_flag(std::false_type)
+	{
+		bits_ &= ~mask_;
+	}
+
+	uint64_t bits_ = 0;
+	uint64_t mask_ = 1;
 };
 
 template <int N>
@@ -414,14 +461,13 @@ public:
 	
 	void parse(const char* s)
 	{
-		//compressed_objstack<32> depth;
-		objstack<32> depth;
+		objstack<63> depth;
 		key_val kv = KEY;
 loop:
 		do
 		{
 			s = skip_blanks(s);
-
+			
 			switch (*s)
 			{
 				case '{': // new object
@@ -471,43 +517,42 @@ loop:
 				case ':':
 					kv = VAL;
 					break;
-				default:
-					/*switch (*s)
-					{
-						case 'n': // null
-							if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
-							{
-								s += 4;
-							}
-							break;
-						case 't': // true
-							if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
-							{
-								s += 3;
-							}
-							break;
-						case 'f': // false
-							if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
-							{
-								s += 5;
-							}
-							break;
-						case '0':
-						case '1':
-						case '2':
-						case '3':
-						case '4':
-						case '5':
-						case '6':
-						case '7':
-						case '8':
-						case '9':
-						case '-':
-							break;
-					}*/
-
-					break;
 			}
+			/*switch (*s)
+			{
+				case 'n': // null
+					if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
+					{
+						s += 4;
+					}
+					break;
+				case 't': // true
+					if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
+					{
+						s += 3;
+					}
+					break;
+				case 'f': // false
+					if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
+					{
+						s += 5;
+					}
+					break;
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+				case '-':
+					++s;
+					while (*s >= '0' && *s <= '9') ++s;
+					break;
+			}*/
 			++s;
 		}
 		while (*s);
