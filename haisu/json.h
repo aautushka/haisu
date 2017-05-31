@@ -473,8 +473,8 @@ public:
 	
 	void parse(const char* s)
 	{
-		objstack<63> depth;
 		key_val kv = KEY;
+		objstack<63> depth;
 loop:
 		do
 		{
