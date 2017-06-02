@@ -72,7 +72,7 @@ const char* skip_to(const char* str)
 template <char ch>
 const char* skip_past(const char* str)
 {
-	auto ret = skip_to<ch>;
+	auto ret = skip_to<ch>(str);
 	return ret + (*ret ? 1 : 0);
 }
 
@@ -473,99 +473,106 @@ public:
 	
 	void parse(const char* s)
 	{
-		key_val kv = KEY;
+		int state = 0;
 		objstack<63> depth;
 loop:
 		do
 		{
 			s = skip_blanks(s);
 			
-			switch (*s)
+			if (!state)
 			{
-				case '{': // new object
-					kv = KEY;
-					call_on_new_object();
-					depth.push_object();
-					break;
-				case '[': // new array
-					kv = KEY;
-					call_on_new_array();
-					depth.push_array();
-					break;
-				case '\'': // object key, or array item
-				case '"': // object key, or array item
-					{
-						const auto quote = *s;
-						const auto k = ++s;
-						s = skip_to_end_of_string(quote, s);
-						if (depth.is_object_on_top())
+				switch (*s)
+				{
+					case '{': // new object
+						call_on_new_object();
+						depth.push_object();
+						break;
+					case '[': // new array
+						call_on_new_array();
+						depth.push_array();
+						break;
+					case '\'': // object key, or array item
+					case '"': // object key, or array item
 						{
-							if (kv == KEY)
+							const auto quote = *s;
+							const auto k = ++s;
+							s = skip_to_end_of_string(quote, s);
+							if (depth.is_object_on_top())
 							{
 								call_on_key(k, s);
 							}
-							else 
+							else
 							{
-								call_on_value(k, s);
-								kv = KEY;
+								call_on_array(k, s);
 							}
 						}
-						else
-						{
-							call_on_array(k, s);
-						}
-					}
-					break;
-				case '}': // object end
-					call_on_object_end();
-					depth.pop();
-					break;
-				case ']': // array end
-					call_on_array_end();
-					depth.pop();
-					break;
-				case ',':
-					break;
-				case ':':
-					kv = VAL;
-					break;
+						break;
+					case '}': // object end
+						call_on_object_end();
+						depth.pop();
+						break;
+					case ']': // array end
+						call_on_array_end();
+						depth.pop();
+						break;
+					case ',':
+						break;
+					case ':':
+						state = 1;
+						break;
+				}
+				++s;
 			}
-			/*switch (*s)
+			else
 			{
-				case 'n': // null
-					if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
-					{
-						s += 4;
-					}
-					break;
-				case 't': // true
-					if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
-					{
-						s += 3;
-					}
-					break;
-				case 'f': // false
-					if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
-					{
-						s += 5;
-					}
-					break;
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
-				case '-':
-					++s;
-					while (*s >= '0' && *s <= '9') ++s;
-					break;
-			}*/
-			++s;
+				switch (*s)
+				{
+					case '\'':
+					case '"':
+						{
+							const auto quote = *s;
+							const auto k = ++s;
+							s = skip_to_end_of_string(quote, s);
+							call_on_value(k, s);
+							++s;
+						}
+						break;
+					case 'n': // null
+						if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
+						{
+							s += 4;
+						}
+						break;
+					case 't': // true
+						if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
+						{
+							s += 3;
+						}
+						break;
+					case 'f': // false
+						if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
+						{
+							s += 5;
+						}
+						break;
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+					case '-':
+						++s;
+						while (*s >= '0' && *s <= '9') ++s;
+						break;
+				}
+				state = 0;
+			}
 		}
 		while (*s);
 	}
