@@ -55,7 +55,7 @@ public:
 
 		const T* operator ->() const
 		{
-			return &base_.t_;
+			return &base_->t_;
 		}
 
 	private:

@@ -24,7 +24,7 @@ namespace haisu
 {
 
 template <typename T>
-struct direct_hash
+struct identity
 {
 	constexpr T operator ()(T t) const { return t; }
 };
