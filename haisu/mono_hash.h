@@ -233,7 +233,7 @@ public:
 	void erase(key_type key)
 	{
 		const auto index = find_index(key);
-		if (key != -1)
+		if (index != -1)
 		{
 			table_[index].first = 0;
 		}

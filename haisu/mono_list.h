@@ -18,7 +18,7 @@ class list
 public:
 	using size_type = offset_type;
 	
-	constexpr list() noexcept
+	list() noexcept
 	{
 		clear_init();
 	}

@@ -281,13 +281,13 @@ public:
 		return bits_ & mask_;
 	}
 
-	constexpr void pop()
+	void pop()
 	{
 		mask_ >>= 1;
 	}
 
 	template <bool Flag>
-	constexpr void push()
+	void push()
 	{
 		mask_ <<= 1;
 		using tag = std::conditional_t<Flag, std::true_type, std::false_type>;
@@ -300,12 +300,12 @@ public:
 	}
 
 private:
-	constexpr void push_flag(std::true_type)
+	void push_flag(std::true_type)
 	{
 		bits_ |= mask_;
 	}
 
-	constexpr void push_flag(std::false_type)
+	void push_flag(std::false_type)
 	{
 		bits_ &= ~mask_;
 	}
