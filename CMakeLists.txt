@@ -6,5 +6,4 @@ add_compile_options(-std=gnu++14)
 
 add_subdirectory(haisu)
 add_subdirectory(tests)
-add_subdirectory(googletest)
-#add_subdirectory(bench)
+add_subdirectory(bench)

@@ -37,8 +37,8 @@ public:
 		const size_t sz = sizeof(t);
 		buf.resize(prev + sz);
 		
-        auto source = &buf[index * sz];
-        auto dest = source + sz;
+		auto source = &buf[index * sz];
+		auto dest = source + sz;
 		memmove(dest, source, prev - index * sz);
 		at<T>(index) = t;
 	}
@@ -50,8 +50,8 @@ public:
 		const auto src = dest + sizeof(T);
 		const auto size = buf.size() - src;
         
-        auto destptr = &buf[dest];
-        auto sourceptr = destptr + sizeof(T);
+		auto destptr = &buf[dest];
+		auto sourceptr = destptr + sizeof(T);
 
         memmove(destptr, sourceptr, size);
 		buf.resize(buf.size() - sizeof(T));
@@ -106,8 +106,8 @@ void zbuf::erase<const char*>(size_t index)
 	const size_t sz = strlen(&buf[index]) + 1;
 	const size_t from = index + sz;
     
-    auto dest = &buf[index];
-    auto source = dest + sz;
+	auto dest = &buf[index];
+	auto source = dest + sz;
 	memmove(dest, source, buf.size() - from);
 	buf.resize(buf.size() - sz);
 }
@@ -119,10 +119,10 @@ void zbuf::insert<const char*>(size_t index, const char* t)
 	const size_t sz = strlen(t) + 1;
 	buf.resize(prev + sz);
 		
-    auto source = &buf[index];
-    auto dest = source + sz;
-    memmove(dest, source, prev - index);
-    memcpy(source, t, sz);
+	auto source = &buf[index];
+	auto dest = source + sz;
+	memmove(dest, source, prev - index);
+	memcpy(source, t, sz);
 }
 
 
