@@ -11,6 +11,12 @@
 #include <sys/syscall.h>
 #define gettid() syscall(SYS_gettid)
 #endif
+#elif _WINDOWS
+#include "windows.h"
+inline uint64_t gettid()
+{
+    return ::GetCurrentThreadId();
+}
 #else
 inline uint64_t gettid()
 {
