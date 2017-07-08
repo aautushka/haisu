@@ -20,4 +20,5 @@ set(SRC
   duo
   meta
   hash
+  object_pool
 )

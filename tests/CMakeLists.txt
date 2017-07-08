@@ -31,6 +31,7 @@ set(SRC
   mono_hash_tests
   json_tests
   json_bitstack_tests
+  object_pool_tests
 )
 
 add_executable(tests ${SRC})
