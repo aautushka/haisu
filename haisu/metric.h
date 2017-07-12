@@ -147,20 +147,9 @@ public:
 		// TODO: std::chrono? performance!
 		// 	 benchmark gettimeofday -- it's supposed to be fast and work in user-space
 		// 	 consider TSC
-#ifdef __linux__
-		struct rusage ru;
-		if (0 == getrusage(RUSAGE_THREAD, &ru))
-		{
-			timeval& user = ru.ru_utime;
-			timeval& sys = ru.ru_stime;
-			return usec(user) + usec(sys);
-		}
-#else
 		timeval time;
 		gettimeofday(&time, nullptr);
-		return (time.tv_sec * 1000) + (time.tv_usec / 1000);
-#endif
-		return 0;
+		return (time.tv_sec * 1000 * 1000) + (time.tv_usec);
 	}
 
 private:
