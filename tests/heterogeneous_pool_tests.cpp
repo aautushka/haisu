@@ -23,22 +23,22 @@ SOFTWARE.
 */
 
 #include <gtest/gtest.h>
-#include "haisu/object_pool.h"
+#include "haisu/heterogeneous_pool.h"
 
-struct object_pool_test : ::testing::Test
+struct heterogeneous_pool_test : ::testing::Test
 {
-	haisu::object_pool<int, 10> pool;
+	haisu::heterogeneous_pool<int, 10> pool;
 };
 
-TEST_F(object_pool_test, allocates_from_pool)
+TEST_F(heterogeneous_pool_test, allocates_from_pool)
 {
-	int* p = pool.alloc();
+	int* p = pool.alloc<int>();
 	EXPECT_TRUE(p != nullptr);
 }
 
-TEST_F(object_pool_test, object_belongs_to_the_pool)
+TEST_F(heterogeneous_pool_test, object_belongs_to_the_pool)
 {
-	auto p = pool.alloc();
+	auto p = pool.alloc<int>();
 	EXPECT_TRUE(pool.belongs(p));
 
 	int i;
@@ -46,74 +46,65 @@ TEST_F(object_pool_test, object_belongs_to_the_pool)
 
 }
 
-TEST_F(object_pool_test, allocates_same_object_once_freed)
+TEST_F(heterogeneous_pool_test, allocates_same_object_once_freed)
 {
-	auto p1 = pool.alloc();
+	auto p1 = pool.alloc<int>();
 	pool.dealloc(p1);
-	auto p2 = pool.alloc();
+	auto p2 = pool.alloc<int>();
 	EXPECT_EQ(p1, p2);
 }
 
-TEST_F(object_pool_test, allocates_object_at_different_addr)
+TEST_F(heterogeneous_pool_test, allocates_object_at_different_addr)
 {
-	int* p1 = pool.alloc();
-	int* p2 = pool.alloc();
+	int* p1 = pool.alloc<int>();
+	int* p2 = pool.alloc<int>();
 
 	EXPECT_NE(p1, p2);
 }
 
-TEST_F(object_pool_test, returns_capacity)
+TEST_F(heterogeneous_pool_test, returns_capacity)
 {
 	EXPECT_EQ(10, pool.capacity());
 }
 
-TEST_F(object_pool_test, initial_size_is_zero)
+TEST_F(heterogeneous_pool_test, initial_size_is_zero)
 {
 	EXPECT_EQ(0, pool.size());
 }
 
-TEST_F(object_pool_test, size_is_increased_as_a_result_of_object_allocation)
+TEST_F(heterogeneous_pool_test, size_is_increased_as_a_result_of_object_allocation)
 {
-	pool.alloc();
+	pool.alloc<int>();
 	EXPECT_EQ(1, pool.size());
 }
 
-TEST_F(object_pool_test, exhausts_pool)
+TEST_F(heterogeneous_pool_test, exhausts_pool)
 {
-	haisu::object_pool<int, 1> pool;
-	pool.alloc();
-	EXPECT_EQ(nullptr, pool.alloc());
+	haisu::heterogeneous_pool<int, 1> pool;
+	pool.alloc<int>();
+	EXPECT_EQ(nullptr, pool.alloc<int>());
 }
 
-TEST_F(object_pool_test, constructs_object)
+TEST_F(heterogeneous_pool_test, constructs_object)
 {
-	haisu::object_pool<std::string, 1> pool;
-	auto s = pool.construct("hello world");
+	haisu::heterogeneous_pool<std::string, 1> pool;
+	auto s = pool.construct<std::string>("hello world");
 	EXPECT_EQ("hello world", *s);
     pool.destroy(s);
 }
 
-TEST_F(object_pool_test, size_is_decreased_once_the_object_gets_freed)
+TEST_F(heterogeneous_pool_test, size_is_decreased_once_the_object_gets_freed)
 {
-	auto p = pool.alloc();
+	auto p = pool.alloc<int>();
     pool.dealloc(p);
 
 	EXPECT_EQ(0, pool.size());
 }
 
-TEST_F(object_pool_test, deallocs_all_objects_without_calling_the_descructors)
+TEST_F(heterogeneous_pool_test, deallocs_all_objects_without_calling_the_descructors)
 {
-    auto p = pool.alloc();
+    auto p = pool.alloc<int>();
     pool.dealloc_all();
-
-    EXPECT_EQ(0, pool.size());
-}
-
-TEST_F(object_pool_test, destroys_all_object_and_calls_the_respective_desctuctors)
-{
-    haisu::object_pool<std::unique_ptr<std::string>, 1> pool;
-    auto s = pool.construct(new std::string("hello world"));
-    pool.destroy_all();
 
     EXPECT_EQ(0, pool.size());
 }

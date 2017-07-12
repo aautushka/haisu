@@ -32,6 +32,7 @@ set(SRC
   json_tests
   json_bitstack_tests
   object_pool_tests
+  heterogeneous_pool_tests
 )
 
 add_executable(tests ${SRC})
