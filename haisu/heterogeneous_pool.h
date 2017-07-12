@@ -27,7 +27,42 @@ SOFTWARE.
 namespace haisu
 {
 
-template <class T, int N>
+namespace detail
+{
+template <int N, class ... Ts> struct max_mem : std::integral_constant<int, N> {};
+
+template <int N, class T, class ... Ts>
+struct max_mem<N, T, Ts...> : std::integral_constant<int, max_mem<(N > sizeof(T) ? N : sizeof(T)), Ts...>::value> {};
+
+static_assert(4 == max_mem<0, int32_t>::value, "");
+static_assert(4 == max_mem<0, int16_t, int32_t>::value, "");
+static_assert(4 == max_mem<0, int32_t, int16_t>::value, "");
+static_assert(8 == max_mem<0, int8_t, int16_t, int32_t, int64_t>::value, "");
+
+template <class ... Ts>
+struct memory_holder
+{
+    uint8_t memory[max_mem<0, Ts...>::value];
+
+    template <typename U>
+    U* cast_memory()
+    {
+        return reinterpret_cast<U*>(memory);
+    }
+};
+
+template <typename ... Ts> struct contains;
+template <typename T> struct contains<T> : std::integral_constant<bool, false> {};
+template <typename T, typename ... Ts> struct contains<T, T, Ts...> : std::integral_constant<bool, true> {};
+template <typename T, typename U, typename ... Ts> struct contains<T, U, Ts...> : std::integral_constant<bool, contains<T, Ts...>::value>{};
+static_assert(contains<int, int>::value, "");
+static_assert(contains<int, char, short, int>::value, "");
+static_assert(!contains<int, char>::value, "");
+
+} // namespace detail
+
+
+template <int N, class ... Ts>
 class heterogeneous_pool
 {
 public:
@@ -58,7 +93,7 @@ public:
         {
             if (!free_objects[i])
             {
-                dealloc(&pool_[i].obj);
+                dealloc_no_type_check(&pool_[i].obj);
             }
         }
     }
@@ -66,9 +101,12 @@ public:
     template <typename U>
 	U* alloc()
 	{
+        static_assert(detail::contains<U, Ts...>::value, "");
+
 		if (free_)
 		{
-			auto ret = &free_->obj;
+            auto ret = free_->obj.template cast_memory<U>();
+
 			free_ = free_->next;
 			return ret;
 		}
@@ -79,9 +117,11 @@ public:
 	template <typename U, typename ... Args>
 	U* construct(Args&& ... args)
 	{
+        static_assert(detail::contains<U, Ts...>::value, "");
+
 		if (free_)
 		{
-			auto ret = &free_->obj;
+            auto ret = free_->obj.template cast_memory<U>();
 			free_ = free_->next;
 			new (ret) U(std::forward<Args>(args)...); 
 			return ret;
@@ -93,15 +133,16 @@ public:
     template <typename U>
 	void dealloc(U* u)
 	{
-		assert(belongs(u));
-		auto o = reinterpret_cast<object*>(u);
-		o->next = free_;
-		free_ = o;	
+        static_assert(detail::contains<U, Ts...>::value, "");
+        dealloc_no_type_check(u);
 	}
 
     template <typename U>
 	void destroy(U* u)
 	{
+        static_assert(detail::contains<U, Ts...>::value, "");
+        assert(belongs(u));
+
         assert(belongs(u));
 		u->~U();
 		dealloc(u);
@@ -110,8 +151,10 @@ public:
     template <typename U>
 	bool belongs(const U* u) const
 	{
+        static_assert(detail::contains<U, Ts...>::value, "");
+
         auto o = reinterpret_cast<const object*>(u);
-		return o >= pool_ && o <= pool_;
+		return o >= pool_ && o <= &pool_[N - 1];
 	}
 
 	static constexpr size_t capacity()
@@ -132,6 +175,14 @@ public:
 	}
 
 private:
+    template <typename U>
+	void dealloc_no_type_check(U* u)
+	{
+		auto o = reinterpret_cast<object*>(u);
+		o->next = free_;
+		free_ = o;	
+	}
+
 	void create_free_list()
 	{
 		for (int i = 0; i < N - 1; ++i)
@@ -144,7 +195,7 @@ private:
 
 	union object
 	{
-		T obj;
+	    detail::memory_holder<Ts...> obj;	
 		object* next;
 
 		object() {}

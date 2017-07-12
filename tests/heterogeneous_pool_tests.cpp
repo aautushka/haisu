@@ -27,7 +27,7 @@ SOFTWARE.
 
 struct heterogeneous_pool_test : ::testing::Test
 {
-	haisu::heterogeneous_pool<int, 10> pool;
+	haisu::heterogeneous_pool<10, int> pool;
 };
 
 TEST_F(heterogeneous_pool_test, allocates_from_pool)
@@ -80,14 +80,14 @@ TEST_F(heterogeneous_pool_test, size_is_increased_as_a_result_of_object_allocati
 
 TEST_F(heterogeneous_pool_test, exhausts_pool)
 {
-	haisu::heterogeneous_pool<int, 1> pool;
+	haisu::heterogeneous_pool<1, int> pool;
 	pool.alloc<int>();
 	EXPECT_EQ(nullptr, pool.alloc<int>());
 }
 
 TEST_F(heterogeneous_pool_test, constructs_object)
 {
-	haisu::heterogeneous_pool<std::string, 1> pool;
+	haisu::heterogeneous_pool<1, std::string> pool;
 	auto s = pool.construct<std::string>("hello world");
 	EXPECT_EQ("hello world", *s);
     pool.destroy(s);
@@ -107,5 +107,16 @@ TEST_F(heterogeneous_pool_test, deallocs_all_objects_without_calling_the_descruc
     pool.dealloc_all();
 
     EXPECT_EQ(0, pool.size());
+}
+
+TEST_F(heterogeneous_pool_test, allocates_object_of_different_types)
+{
+    haisu::heterogeneous_pool<10, int, std::string> pool;
+    auto p1 = pool.construct<int>();
+    auto p2 = pool.construct<std::string>();
+
+    EXPECT_EQ(2, pool.size());
+
+    pool.destroy(p2);
 }
 
