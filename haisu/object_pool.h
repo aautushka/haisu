@@ -19,7 +19,13 @@ public:
 
 	void destroy_all()
 	{
+        foreach_object([this](auto o){destroy(o);});
 	}
+
+    void dealloc_all()
+    {
+        foreach_object([this](auto o){dealloc(o);});
+    }
 
 	T* alloc()
 	{
@@ -39,8 +45,8 @@ public:
 		if (free_)
 		{
 			auto ret = &free_->obj;
-			new (ret) T(std::forward<Args>(args)...); 
 			free_ = free_->next;
+			new (ret) T(std::forward<Args>(args)...); 
 			return ret;
 		}
 
@@ -66,7 +72,7 @@ public:
 		return t >= &pool_[0].obj && t <= &pool_[N - 1].obj;
 	}
 
-	static size_t capacity()
+	static constexpr size_t capacity()
 	{
 		return N;
 	}
@@ -93,6 +99,27 @@ private:
 		pool_[N - 1].next = nullptr;
 		free_ = &pool_[0];
 	}
+
+    void foreach_object(std::function<void(T*)> f)
+    {
+        uint8_t free_objects[capacity()] = {0};
+        auto o = free_;
+
+        while (o)
+        {
+            auto index = o - pool_;
+            free_objects[index] = 1;
+            o = o->next;
+        }
+
+        for (int i = 0; i < capacity(); ++i)
+        {
+            if (!free_objects[i])
+            {
+                f(&pool_[i].obj);
+            }
+        }
+    }
 
 	union object
 	{

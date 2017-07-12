@@ -67,3 +67,29 @@ TEST_F(object_pool_test, constructs_object)
 	auto s = pool.construct("hello world");
 	EXPECT_EQ("hello world", *s);
 }
+
+TEST_F(object_pool_test, size_is_decreased_once_the_object_gets_freed)
+{
+	auto p = pool.alloc();
+    pool.dealloc(p);
+
+	EXPECT_EQ(0, pool.size());
+}
+
+TEST_F(object_pool_test, deallocs_all_objects_without_calling_the_descructors)
+{
+    auto p = pool.alloc();
+    pool.dealloc_all();
+
+    EXPECT_EQ(0, pool.size());
+}
+
+TEST_F(object_pool_test, destroys_all_object_and_calls_the_respective_desctuctors)
+{
+    haisu::object_pool<std::unique_ptr<std::string>, 1> pool;
+    auto s = pool.construct(new std::string("hello world"));
+    pool.destroy_all();
+
+    EXPECT_EQ(0, pool.size());
+}
+

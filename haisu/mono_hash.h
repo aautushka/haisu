@@ -120,6 +120,7 @@ public:
 		}
 
 		signal_error("hash is full");
+        abort();
 	}
 
 	void insert(key_type key, value_type val)
@@ -200,6 +201,7 @@ public:
 		}
 
 		signal_error("hash is full");
+        abort();
 	}
 
 	bool empty() const
