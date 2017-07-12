@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #pragma once
+#include <functional>
 
 namespace haisu
 {
