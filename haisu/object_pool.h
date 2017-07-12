@@ -31,98 +31,98 @@ template <typename T, int N>
 class object_pool
 {
 public:
-	static_assert(N > 0, "empty pool is not allowed");
-	object_pool()
-	{
-		create_free_list();
-	}
+    static_assert(N > 0, "empty pool is not allowed");
+    object_pool()
+    {
+        create_free_list();
+    }
 
-	~object_pool()
-	{
-	}
+    ~object_pool()
+    {
+    }
 
-	void destroy_all()
-	{
+    void destroy_all()
+    {
         foreach_object([this](auto o){destroy(o);});
-	}
+    }
 
     void dealloc_all()
     {
         foreach_object([this](auto o){dealloc(o);});
     }
 
-	T* alloc()
-	{
-		if (free_)
-		{
-			auto ret = &free_->obj;
-			free_ = free_->next;
-			return ret;
-		}
+    T* alloc()
+    {
+        if (free_)
+        {
+            auto ret = &free_->obj;
+            free_ = free_->next;
+            return ret;
+        }
 
-		return nullptr;
-	}
+        return nullptr;
+    }
 
-	template <typename ... Args>
-	T* construct(Args&& ... args)
-	{
-		if (free_)
-		{
-			auto ret = &free_->obj;
-			free_ = free_->next;
-			new (ret) T(std::forward<Args>(args)...); 
-			return ret;
-		}
+    template <typename ... Args>
+    T* construct(Args&& ... args)
+    {
+        if (free_)
+        {
+            auto ret = &free_->obj;
+            free_ = free_->next;
+            new (ret) T(std::forward<Args>(args)...); 
+            return ret;
+        }
 
-		return nullptr;
-	}
+        return nullptr;
+    }
 
-	void dealloc(T* t)
-	{
-		assert(belongs(t));
-		auto o = reinterpret_cast<object*>(t);
-		o->next = free_;
-		free_ = o;	
-	}
+    void dealloc(T* t)
+    {
+        assert(belongs(t));
+        auto o = reinterpret_cast<object*>(t);
+        o->next = free_;
+        free_ = o;    
+    }
 
-	void destroy(T* t)
-	{
-		t->~T();
-		dealloc(t);
-	}
+    void destroy(T* t)
+    {
+        t->~T();
+        dealloc(t);
+    }
 
-	bool belongs(const T* t) const
-	{
-		return t >= &pool_[0].obj && t <= &pool_[N - 1].obj;
-	}
+    bool belongs(const T* t) const
+    {
+        return t >= &pool_[0].obj && t <= &pool_[N - 1].obj;
+    }
 
-	static constexpr size_t capacity()
-	{
-		return N;
-	}
+    static constexpr size_t capacity()
+    {
+        return N;
+    }
 
-	size_t size() const
-	{
-		auto o = free_;
-		auto free_size = 0;
-		while (o)
-		{
-			++free_size;
-			o = o->next;
-		}
-		return capacity() - free_size;
-	}
+    size_t size() const
+    {
+        auto o = free_;
+        auto free_size = 0;
+        while (o)
+        {
+            ++free_size;
+            o = o->next;
+        }
+        return capacity() - free_size;
+    }
 
 private:
-	void create_free_list()
-	{
-		for (int i = 0; i < N - 1; ++i)
-		{
-			pool_[i].next = &pool_[i + 1];
-		}
-		pool_[N - 1].next = nullptr;
-		free_ = &pool_[0];
-	}
+    void create_free_list()
+    {
+        for (int i = 0; i < N - 1; ++i)
+        {
+            pool_[i].next = &pool_[i + 1];
+        }
+        pool_[N - 1].next = nullptr;
+        free_ = &pool_[0];
+    }
 
     void foreach_object(std::function<void(T*)> f)
     {
@@ -145,19 +145,19 @@ private:
         }
     }
 
-	union object
-	{
-		T obj;
-		object* next;
+    union object
+    {
+        T obj;
+        object* next;
 
-		object() {}
-		~object() {}
-	};
+        object() {}
+        ~object() {}
+    };
 
-	object* free_ = nullptr;
-	object pool_[N];
+    object* free_ = nullptr;
+    object pool_[N];
 };
-	
+    
 } // namespace haisu
 
 

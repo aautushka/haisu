@@ -11,14 +11,14 @@ std::string empty_json = "{}";
 class gason_parser
 {
 public:
-	void parse(char * str)
-	{
-		char *endptr;
-		jsonParse(str, &endptr, &value, alloc);
-	}
+    void parse(char * str)
+    {
+        char *endptr;
+        jsonParse(str, &endptr, &value, alloc);
+    }
 private:
-	JsonValue value;
-	JsonAllocator alloc;
+    JsonValue value;
+    JsonAllocator alloc;
 };
 
 class json_parser : public haisu::json::parser<json_parser>
@@ -27,23 +27,23 @@ class json_parser : public haisu::json::parser<json_parser>
 
 
 static void bench_gason_json(benchmark::State& state, std::string json) 
-{	
-	gason_parser parser;
-	while (state.KeepRunning())
-	{
-		std::string j = json;
-		parser.parse(&j[0]);
-	}
+{    
+    gason_parser parser;
+    while (state.KeepRunning())
+    {
+        std::string j = json;
+        parser.parse(&j[0]);
+    }
 }
 
 static void bench_haisu_json(benchmark::State& state, std::string json)
 {
-	json_parser parser;
-	while (state.KeepRunning())
-	{
-		std::string j = json;
-		parser.parse(j.c_str());
-	}
+    json_parser parser;
+    while (state.KeepRunning())
+    {
+        std::string j = json;
+        parser.parse(j.c_str());
+    }
 }
 
 BENCHMARK_CAPTURE(bench_gason_json, gason_nested_json, nested_json);

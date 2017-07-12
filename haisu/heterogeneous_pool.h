@@ -66,16 +66,16 @@ template <int N, class ... Ts>
 class heterogeneous_pool
 {
 public:
-	static_assert(N > 0, "empty pool is not allowed");
+    static_assert(N > 0, "empty pool is not allowed");
 
-	heterogeneous_pool()
-	{
-		create_free_list();
-	}
+    heterogeneous_pool()
+    {
+        create_free_list();
+    }
 
-	~heterogeneous_pool()
-	{
-	}
+    ~heterogeneous_pool()
+    {
+    }
 
     void dealloc_all()
     {
@@ -99,113 +99,113 @@ public:
     }
 
     template <typename U>
-	U* alloc()
-	{
+    U* alloc()
+    {
         static_assert(detail::contains<U, Ts...>::value, "");
 
-		if (free_)
-		{
+        if (free_)
+        {
             auto ret = free_->obj.template cast_memory<U>();
 
-			free_ = free_->next;
-			return ret;
-		}
+            free_ = free_->next;
+            return ret;
+        }
 
-		return nullptr;
-	}
+        return nullptr;
+    }
 
-	template <typename U, typename ... Args>
-	U* construct(Args&& ... args)
-	{
+    template <typename U, typename ... Args>
+    U* construct(Args&& ... args)
+    {
         static_assert(detail::contains<U, Ts...>::value, "");
 
-		if (free_)
-		{
+        if (free_)
+        {
             auto ret = free_->obj.template cast_memory<U>();
-			free_ = free_->next;
-			new (ret) U(std::forward<Args>(args)...); 
-			return ret;
-		}
+            free_ = free_->next;
+            new (ret) U(std::forward<Args>(args)...); 
+            return ret;
+        }
 
-		return nullptr;
-	}
+        return nullptr;
+    }
 
     template <typename U>
-	void dealloc(U* u)
-	{
+    void dealloc(U* u)
+    {
         static_assert(detail::contains<U, Ts...>::value, "");
         dealloc_no_type_check(u);
-	}
+    }
 
     template <typename U>
-	void destroy(U* u)
-	{
+    void destroy(U* u)
+    {
         static_assert(detail::contains<U, Ts...>::value, "");
         assert(belongs(u));
 
         assert(belongs(u));
-		u->~U();
-		dealloc(u);
-	}
+        u->~U();
+        dealloc(u);
+    }
 
     template <typename U>
-	bool belongs(const U* u) const
-	{
+    bool belongs(const U* u) const
+    {
         static_assert(detail::contains<U, Ts...>::value, "");
 
         auto o = reinterpret_cast<const object*>(u);
-		return o >= pool_ && o <= &pool_[N - 1];
-	}
+        return o >= pool_ && o <= &pool_[N - 1];
+    }
 
-	static constexpr size_t capacity()
-	{
-		return N;
-	}
+    static constexpr size_t capacity()
+    {
+        return N;
+    }
 
-	size_t size() const
-	{
-		auto o = free_;
-		auto free_size = 0;
-		while (o)
-		{
-			++free_size;
-			o = o->next;
-		}
-		return capacity() - free_size;
-	}
+    size_t size() const
+    {
+        auto o = free_;
+        auto free_size = 0;
+        while (o)
+        {
+            ++free_size;
+            o = o->next;
+        }
+        return capacity() - free_size;
+    }
 
 private:
     template <typename U>
-	void dealloc_no_type_check(U* u)
-	{
-		auto o = reinterpret_cast<object*>(u);
-		o->next = free_;
-		free_ = o;	
-	}
+    void dealloc_no_type_check(U* u)
+    {
+        auto o = reinterpret_cast<object*>(u);
+        o->next = free_;
+        free_ = o;    
+    }
 
-	void create_free_list()
-	{
-		for (int i = 0; i < N - 1; ++i)
-		{
-			pool_[i].next = &pool_[i + 1];
-		}
-		pool_[N - 1].next = nullptr;
-		free_ = &pool_[0];
-	}
+    void create_free_list()
+    {
+        for (int i = 0; i < N - 1; ++i)
+        {
+            pool_[i].next = &pool_[i + 1];
+        }
+        pool_[N - 1].next = nullptr;
+        free_ = &pool_[0];
+    }
 
-	union object
-	{
-	    detail::memory_holder<Ts...> obj;	
-		object* next;
+    union object
+    {
+        detail::memory_holder<Ts...> obj;    
+        object* next;
 
-		object() {}
-		~object() {}
-	};
+        object() {}
+        ~object() {}
+    };
 
-	object* free_ = nullptr;
-	object pool_[N];
+    object* free_ = nullptr;
+    object pool_[N];
 };
-	
+    
 } // namespace haisu
 
 

@@ -27,30 +27,30 @@ SOFTWARE.
 
 struct allocator_test : ::testing::Test
 {
-	using mem_t = haisu::podbump;
-	using allocator_t = haisu::allocator<int, mem_t>;
+    using mem_t = haisu::podbump;
+    using allocator_t = haisu::allocator<int, mem_t>;
 
-	mem_t mem;
-	allocator_t allocator;
+    mem_t mem;
+    allocator_t allocator;
 
-	allocator_test()
-		: allocator(mem)
-	{
-	}
+    allocator_test()
+        : allocator(mem)
+    {
+    }
 };
 
 TEST_F(allocator_test, allocates_memory)
 {
-	int* p = allocator.allocate(1);
-	EXPECT_TRUE(p != nullptr);
+    int* p = allocator.allocate(1);
+    EXPECT_TRUE(p != nullptr);
 }
 
 TEST_F(allocator_test, integrates_with_standard_containers)
 {
-	std::vector<int, allocator_t> vec(allocator);
-	vec.push_back(0xdeadbeef);
-	vec.push_back(0xbaddcafe);
+    std::vector<int, allocator_t> vec(allocator);
+    vec.push_back(0xdeadbeef);
+    vec.push_back(0xbaddcafe);
 
-	EXPECT_EQ(0xdeadbeef, vec[0]);
-	EXPECT_EQ(0xbaddcafe, vec[1]);
+    EXPECT_EQ(0xdeadbeef, vec[0]);
+    EXPECT_EQ(0xbaddcafe, vec[1]);
 }
