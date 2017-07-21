@@ -22,4 +22,5 @@ set(SRC
   hash
   object_pool
   heterogeneous_pool
+  small_any
 )

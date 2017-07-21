@@ -149,14 +149,14 @@ public:
         //      consider TSC
         timeval time;
         gettimeofday(&time, nullptr);
-        return (time.tv_sec * 1000 * 1000) + (time.tv_usec);
+        return usec(time);
     }
 
 private:
 
     static usec_t usec(timeval time)
     {
-        return (usec_t)time.tv_sec * 1000000 + time.tv_usec;
+        return (usec_t)time.tv_sec * 1000 * 1000 + time.tv_usec;
     }
 
     usec_t _started = 0;
