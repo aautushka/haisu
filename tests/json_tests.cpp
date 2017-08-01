@@ -84,6 +84,11 @@ public:
         _arr.push_back(std::string(first, last));
     }
 
+    void on_array(bool val)
+    {
+        _arr.push_back(val ? "boolean true" : "boolean false");
+    }
+
     size_t size() const
     {
         return _arr.size();
@@ -201,14 +206,14 @@ TEST_F(json_test, skips_null_value)
     EXPECT_EQ("b", arr[1]);
 }
 
-TEST_F(json_test, DISABLED_reads_boolean_true_in_array)
+TEST_F(json_test, reads_boolean_true_in_array)
 {
     arr.parse("[true,'a']");
 
     EXPECT_EQ("boolean true", arr[0]);
 }
 
-TEST_F(json_test, DISABLED_reads_boolean_false_in_array)
+TEST_F(json_test, reads_boolean_false_in_array)
 {
     arr.parse("[false,'a']");
 

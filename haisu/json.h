@@ -157,10 +157,15 @@ auto call_bool_value(T& t, int) -> decltype(t.on_value(B), void())
     t.on_value(B);
 }
 
+template <bool B, typename T> void call_bool_value(T&t, long) {}
+
 template <bool B, typename T>
-void call_bool_value(T&t, long)
+auto call_bool_array(T& t, int) -> decltype(t.on_array(B), void())
 {
+    t.on_array(B);
 }
+
+template <bool B, typename T> void call_bool_array(T& t, long) {}
 
 template <typename T>
 auto call_array(T& t, const char* first, const char* last, int) -> decltype(t.on_array(first, last), void())
@@ -209,37 +214,37 @@ public:
     using size_type = meta::memory_requirement_t<N>;
     T top() const noexcept
     {
-        assert(size_ > 0);
-        return stack_[size_ - 1];
+        assert(cur_ < N);
+        return stack_[cur_];
     }
 
     template <T val>
     void push() noexcept 
     {
-        assert(size_ < N);
-        stack_[size_++] = val;
+        assert(cur_ > 0);
+        stack_[--cur_] = val;
     }
 
     void push(T t) noexcept
     {
-        assert(size_ < N);
-        stack_[size_++] = t;
+        assert(cur_ > 0);
+        stack_[--cur_] = t;
     }
 
     void pop() noexcept
     {
-        assert(size_ > 0);
-        --size_;
+        assert(cur_ < N);
+        ++cur_;
     }
 
     T empty() const noexcept
     {
-        return !size_;
+        return cur_ == N;
     }
 
 private:
-    size_type size_ = 0;
     T stack_[N];
+    size_type cur_ = N;
 };
 
 template <int N>
@@ -530,8 +535,8 @@ public:
     
     void parse(const char* s)
     {
+        static_stack<int8_t, 64> stack;
         parser_state state = state_bad;
-        static_stack<int8_t, 32> stack;
         stack.push(state_bad);
 
         do
@@ -589,20 +594,33 @@ public:
                 case 'n': // null
                     if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
                     {
+                        switch (state)
+                        {
+                            case state_object_value: call_on_null_value(); break;
+                            case state_array_item: call_on_null_array(); break;
+                        }
                         s += 4;
                     }
                     break;
                 case 't': // true
                     if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
                     {
-                        call_on_bool<true>();
+                        switch (state)
+                        {
+                            case state_object_value: call_on_bool_value<true>(); break;
+                            case state_array_item: call_on_bool_array<true>(); break;
+                        }
                         s += 3;
                     }
                     break;
                 case 'f': // false
                     if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
                     {
-                        call_on_bool<false>();
+                        switch (state)
+                        {
+                            case state_object_value: call_on_bool_value<false>(); break;
+                            case state_array_item: call_on_bool_array<false>(); break;
+                        }
                         s += 5;
                     }
                     break;
@@ -643,9 +661,33 @@ private:
     }
 
     template <bool B>
-    void call_on_bool()
+    void call_on_bool_value()
     {
         call_bool_value<B>(*static_cast<T*>(this), 0);
+    }
+
+    template <bool B>
+    void call_on_bool_array()
+    {
+        call_bool_array<B>(*static_cast<T*>(this), 0);
+    }
+
+    void call_on_int_value()
+    {
+    }
+
+    void call_on_int_array()
+    {
+    }
+    
+    void call_on_null_value()
+    {
+        //call_null_value(*static_cast<T*>(this));
+    }
+
+    void call_on_null_array()
+    {
+        //call_null_array(*static_cast<T*>(this));
     }
 
     void call_on_new_object()
