@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once
 #include <cstring>
+#include <experimental/string_view>
 
 #include "haisu/mono_stack.h"
 
@@ -38,6 +39,8 @@ namespace haisu
 {
 namespace json
 {
+
+using string_view = std::experimental::string_view;
 
 inline bool is_blank(char ch)
 {
@@ -145,6 +148,17 @@ auto call_value(T& t, const char* first, const char* last, int) -> decltype(t.on
 
 template <typename T>
 void call_value(T&t, const char* first, const char* last, long)
+{
+}
+
+template <bool B, typename T>
+auto call_bool_value(T& t, int) -> decltype(t.on_value(B), void())
+{
+    t.on_value(B);
+}
+
+template <bool B, typename T>
+void call_bool_value(T&t, long)
 {
 }
 
@@ -497,14 +511,19 @@ public:
     
     void parse(const char* s)
     {
-        int state = 0;
+        enum class parser_state
+        {
+            key,
+            value
+        } state = parser_state::key;
+
         objstack<63> depth;
 loop:
         do
         {
             s = skip_blanks(s);
             
-            if (!state)
+            if (state != parser_state::value)
             {
                 switch (*s)
                 {
@@ -543,7 +562,7 @@ loop:
                     case ',':
                         break;
                     case ':':
-                        state = 1;
+                        state = parser_state::value;
                         break;
                 }
                 ++s;
@@ -571,12 +590,14 @@ loop:
                     case 't': // true
                         if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
                         {
+                            call_on_bool<true>();
                             s += 3;
                         }
                         break;
                     case 'f': // false
                         if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
                         {
+                            call_on_bool<false>();
                             s += 5;
                         }
                         break;
@@ -595,7 +616,7 @@ loop:
                         while (*s >= '0' && *s <= '9') ++s;
                         break;
                 }
-                state = 0;
+                state = parser_state::key;
             }
         }
         while (*s);
@@ -615,6 +636,12 @@ private:
     void call_on_array(const char* str, const char* end)
     {
         call_array(*static_cast<T*>(this), str, end, 0);
+    }
+
+    template <bool B>
+    void call_on_bool()
+    {
+        call_bool_value<B>(*static_cast<T*>(this), 0);
     }
 
     void call_on_new_object()
@@ -646,6 +673,10 @@ public:
     }
 
     void on_value(const char* str, const char* end)
+    {
+    }
+
+    void on_value(bool)
     {
     }
 

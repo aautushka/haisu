@@ -40,6 +40,11 @@ public:
         tree_[path_] = std::string(str, end);
     }
 
+    void on_value(bool value)
+    {
+        tree_[path_] = value ? "boolean true" : "boolean false";
+    }
+
     void on_new_object()
     {
         path_.push_back(std::string());
@@ -188,7 +193,7 @@ TEST_F(json_test, parses_single_quoted_strings)
     EXPECT_EQ("b", json["a"]);
 }
 
-/*TEST_F(json_test, skips_null_value)
+TEST_F(json_test, skips_null_value)
 {
     arr.parse("[null,'a','b']");
 
@@ -196,19 +201,19 @@ TEST_F(json_test, parses_single_quoted_strings)
     EXPECT_EQ("b", arr[1]);
 }
 
-TEST_F(json_test, skips_true_value)
+TEST_F(json_test, DISABLED_reads_boolean_true_in_array)
 {
     arr.parse("[true,'a']");
 
-    EXPECT_EQ("a", arr[0]);
+    EXPECT_EQ("boolean true", arr[0]);
 }
 
-TEST_F(json_test, skips_false_value)
+TEST_F(json_test, DISABLED_reads_boolean_false_in_array)
 {
     arr.parse("[false,'a']");
 
-    EXPECT_EQ("a", arr[0]);
-}*/
+    EXPECT_EQ("boolean false", arr[0]);
+}
 
 TEST_F(json_test, understands_escaped_quote_character_inside_of_string)
 {
@@ -226,5 +231,17 @@ TEST_F(json_test, parses_multiple_escape_sequences)
 {
     json.parse("{'a\\\\\\'c':'b'}");
     EXPECT_EQ("b", json["a\\\\\\'c"]);
+}
+
+TEST_F(json_test, reads_boolean_true_in_object)
+{
+    json.parse("{'a': true}");
+    EXPECT_EQ("boolean true", json["a"]);
+}
+
+TEST_F(json_test, reads_boolean_false_in_object)
+{
+    json.parse("{'a': false}");
+    EXPECT_EQ("boolean false", json["a"]);
 }
 

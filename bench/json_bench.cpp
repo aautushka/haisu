@@ -7,6 +7,7 @@ std::string flat_json = "{\"a\" : \"b\", \"c\" : \"d\", \"e\" : \"f\", \"g\" : \
 std::string flat_array = "[\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\", \"h\", \"i\", \"j\", \"k\"]";
 std::string long_names = "{\"aaaaaaaaaaaaaaaaa\" : { \"bbbbbbbbbbbbb\" : { \"cccccccccccccccc\" : { \"ddddddddddddddddd\"}}}}";
 std::string empty_json = "{}";
+std::string deep_json = "{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"j\":{\"h\":{\"i\":{\"j\":{\"k\":{\"l\":{\"m\":{\"n\":{\"o\":{\"p\":{\"q\":{\"r\":\"s\"}}}}}}}}}}}}}}}}}}";
 
 class gason_parser
 {
@@ -48,6 +49,9 @@ static void bench_haisu_json(benchmark::State& state, std::string json)
 
 BENCHMARK_CAPTURE(bench_gason_json, gason_nested_json, nested_json);
 BENCHMARK_CAPTURE(bench_haisu_json, haisu_nested_json, nested_json);
+
+BENCHMARK_CAPTURE(bench_gason_json, gason_nested_json, deep_json);
+BENCHMARK_CAPTURE(bench_haisu_json, haisu_nested_json, deep_json);
 
 BENCHMARK_CAPTURE(bench_gason_json, gason_empty_json, empty_json);
 BENCHMARK_CAPTURE(bench_haisu_json, haisu_empty_json, empty_json);
