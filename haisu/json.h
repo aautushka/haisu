@@ -29,7 +29,8 @@ SOFTWARE.
 #include "haisu/mono_stack.h"
 
 // TODO
-// integer value
+// number literals (including floating point numbers)
+// stop parsing upon request (for example, when a desired key/value pair was found and there is no need to continue) 
 
 namespace haisu
 {
@@ -551,6 +552,10 @@ class parser
     };
 
 public:
+    void terminate()
+    {
+        terminate_ = true;
+    }
 
     void start_object();
     void end_object();
@@ -659,12 +664,12 @@ public:
                             case state_array_item: call_on_null_array(); break;
                         }
                         s += 4;
+                        break;
                     }
-                    else // malformed literal
+                    else if constexpr (has_error_handler())// malformed literal
                     {
                         return call_on_error(s);
                     }
-                    break;
                 case 't': // true
                     if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
                     {
@@ -674,12 +679,12 @@ public:
                             case state_array_item: call_on_bool_array<true>(); break;
                         }
                         s += 3;
+                        break;
                     }
-                    else if (has_error_handler()) // malformed literal
+                    else if constexpr (has_error_handler()) // malformed literal
                     {
                         return call_on_error(s);
                     }
-                    break;
                 case 'f': // false
                     if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
                     {
@@ -689,12 +694,12 @@ public:
                             case state_array_item: call_on_bool_array<false>(); break;
                         }
                         s += 5;
+                        break;
                     }
-                    else if (has_error_handler()) // malformed literal
+                    else if constexpr (has_error_handler()) // malformed literal
                     {
                         return call_on_error(s);
                     }
-                    break;
                 case '0':
                 case '1':
                 case '2':
@@ -710,7 +715,7 @@ public:
                     while (*s >= '0' && *s <= '9' || *s == '.') ++s;
                     break;
                 default:
-                    if (has_error_handler())
+                    if constexpr (has_error_handler())
                     {
                         return call_on_error(s);
                     }
@@ -719,9 +724,12 @@ public:
         }
         while (*s);
 
-        if (has_error_handler() && (stack.size() != 1 || stack.top() != state_bad))
+        if constexpr (has_error_handler())
         {
-            call_on_error(s);
+            if (stack.size() != 1 || stack.top() != state_bad)
+            {
+                call_on_error(s);
+            }
         }
     }
 
@@ -802,6 +810,8 @@ private:
     {
         return is_valid_expression<T>([](auto&& o) -> decltype(o.on_error(error{})) {});
     }
+
+    bool terminate_{false};
 };
 
 class model : public parser<model>
