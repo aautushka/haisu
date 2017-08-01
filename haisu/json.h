@@ -29,16 +29,40 @@ SOFTWARE.
 #include "haisu/mono_stack.h"
 
 // TODO
-// null value
-// bool value
 // integer value
-// squote enclosed strings
 // escaped quotes inside of a string
 
 namespace haisu
 {
 namespace json
 {
+
+template <typename Expr, typename Var>
+constexpr auto is_valid_expression_impl(int) -> decltype(std::declval<Expr>()(std::declval<Var>()), bool())
+{
+    return true;
+}
+
+template <typename Expr, typename Var>
+constexpr bool is_valid_expression_impl(long)
+{
+    return false;
+}
+
+template <typename Var, typename Expr>
+constexpr bool is_valid_expression(Expr&&, Var&&)
+{
+    return is_valid_expression_impl<Expr, Var>(0);
+}
+
+template <typename Var, typename Expr>
+constexpr bool is_valid_expression(Expr&&)
+{
+    return is_valid_expression_impl<Expr, Var>(0);
+}
+
+static_assert(is_valid_expression([](auto&& o) -> decltype(o.size()) {}, std::array<int, 10>()), "");
+static_assert(!is_valid_expression([](auto&& o) -> decltype(o.clear()) {}, std::array<int, 10>()), "");
 
 inline bool is_blank(char ch)
 {
@@ -189,13 +213,13 @@ auto call_array_end(T& t, int) -> decltype(t.on_array_end(), void())
 
 template <typename T> void call_array_end(T&, long) {}
 
-template <typename T>
-auto call_error(T& t, const char* pos, int) -> decltype(t.on_error(pos), void())
+template <typename T, typename Error>
+auto call_error(T& t, Error&& err, int) -> decltype(t.on_error(std::forward<Error>(err)), void())
 {
-    t.on_error(pos);
+    t.on_error(std::forward<Error>(err));
 }
 
-template <typename T> void call_error(T& t, const char* pos, long) {}
+template <typename T, typename Error> void call_error(T&, Error&&, long) {}
 
 template <typename T, int N>
 class static_stack
@@ -509,6 +533,7 @@ using string_literal = std::experimental::string_view;
 struct null_literal {};
 struct bool_literal {bool value;};
 struct int_literal {int64_t value;};
+struct error { const char* position; };
 
 template <typename T>
 class parser
@@ -533,7 +558,6 @@ public:
     {
         static_stack<int8_t, 64> stack;
         parser_state state = state_bad;
-        stack.push(state_bad);
 
         do
         {
@@ -552,14 +576,29 @@ public:
                     call_on_new_array();
                     break;
                 case '}': // object end
-                    call_on_object_end();
-                    stack.pop();
-                    state = static_cast<parser_state>(stack.top());
+                    if (!stack.empty())
+                    {
+                        call_on_object_end();
+                        stack.pop();
+                        state = static_cast<parser_state>(stack.top());
+                    }
+                    else if (has_error_handler())
+                    {
+                        return call_on_error(s);
+                    }
                     break;
                 case ']': // array end
-                    call_on_array_end();
-                    state = static_cast<parser_state>(stack.top());
-                    stack.pop();
+                    if (!stack.empty())
+                    {
+                        call_on_array_end();
+                        state = static_cast<parser_state>(stack.top());
+                        stack.pop();
+                        break;
+                    }
+                    else if (has_error_handler())
+                    {
+                        return call_on_error(s);
+                    }
                     break;
                 case ',':
                     state = static_cast<parser_state>(stack.top());
@@ -612,7 +651,7 @@ public:
                         }
                         s += 3;
                     }
-                    else // malformed literal
+                    else if (has_error_handler()) // malformed literal
                     {
                         return call_on_error(s);
                     }
@@ -627,7 +666,7 @@ public:
                         }
                         s += 5;
                     }
-                    else // malformed literal
+                    else if (has_error_handler()) // malformed literal
                     {
                         return call_on_error(s);
                     }
@@ -650,6 +689,11 @@ public:
             ++s;
         }
         while (*s);
+
+        if (has_error_handler() && !stack.empty())
+        {
+            call_on_error(s);
+        }
     }
 
 private:
@@ -722,7 +766,12 @@ private:
 
     void call_on_error(const char* pos)
     {
-        call_error(*static_cast<T*>(this), pos, 0);
+        call_error(*static_cast<T*>(this), error{pos}, 0);
+    }
+
+    static constexpr bool has_error_handler() noexcept
+    {
+        return is_valid_expression<T>([](auto&& o) -> decltype(o.on_error(error{})) {});
     }
 };
 
