@@ -192,6 +192,13 @@ public:
         _stack[_size++] = t;
     }
 
+    template <T t>
+    void push()
+    {
+        assert(_size < N);
+        _stack[_size++] = t;
+    }
+
     iterator begin() 
     {
         return iterator(*this); 

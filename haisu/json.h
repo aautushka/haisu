@@ -202,39 +202,48 @@ auto call_array_end(T& t, int) -> decltype(t.on_array_end(), void())
 
 template <typename T> void call_array_end(T&, long) {}
 
-template <int N>
-class boolstack
+template <typename T, int N>
+class static_stack
 {
 public:
     using size_type = meta::memory_requirement_t<N>;
-    bool top() const
+    T top() const noexcept
     {
         assert(size_ > 0);
-        return bits_[size_ - 1];
+        return stack_[size_ - 1];
     }
 
-    template <bool B>
-    void push()
+    template <T val>
+    void push() noexcept 
     {
         assert(size_ < N);
-        bits_[size_++] = B;
+        stack_[size_++] = val;
     }
 
-    void pop()
+    void push(T t) noexcept
+    {
+        assert(size_ < N);
+        stack_[size_++] = t;
+    }
+
+    void pop() noexcept
     {
         assert(size_ > 0);
         --size_;
     }
 
-    bool empty() const
+    T empty() const noexcept
     {
         return !size_;
     }
 
 private:
     size_type size_ = 0;
-    bool bits_[N];
+    T stack_[N];
 };
+
+template <int N>
+using boolstack = mono::stack<bool, N>;
 
 template <int N>
 class bitstack
@@ -407,29 +416,34 @@ template <int N>
 class objstack
 {
 public:
-    void push_array()
+    void push_array() noexcept
     {
         stack_.template push<true>();
     }
 
-    void push_object()
+    void push_object() noexcept
     {
         stack_.template push<false>();
     }
 
-    bool is_object_on_top() const
+    bool is_object_on_top() const noexcept
     {
         return !stack_.top();    
     }
 
-    bool is_array_on_top() const
+    bool is_array_on_top() const noexcept
     {
         return stack_.top();
     }
 
-    void pop()
+    void pop() noexcept
     {
         stack_.pop();
+    }
+
+    bool empty() const noexcept
+    {
+        return stack_.empty();
     }
 
 private:
@@ -499,8 +513,13 @@ private:
 template <typename T>
 class parser
 {
-    enum state { ARR, OBJ };
-    enum key_val { KEY, VAL };
+    enum parser_state
+    {
+        state_object_key,
+        state_object_value,
+        state_array_item,
+        state_bad
+    };
 
 public:
     void start_object();
@@ -511,113 +530,98 @@ public:
     
     void parse(const char* s)
     {
-        enum class parser_state
-        {
-            key,
-            value
-        } state = parser_state::key;
+        parser_state state = state_bad;
+        static_stack<int8_t, 32> stack;
+        stack.push(state_bad);
 
-        objstack<63> depth;
-loop:
         do
         {
             s = skip_blanks(s);
             
-            if (state != parser_state::value)
+            switch (*s)
             {
-                switch (*s)
-                {
-                    case '{': // new object
-                        call_on_new_object();
-                        depth.push_object();
-                        break;
-                    case '[': // new array
-                        call_on_new_array();
-                        depth.push_array();
-                        break;
-                    case '\'': // object key, or array item
-                    case '"': // object key, or array item
+                case '{': // new object
+                    stack.push<state_object_key>();
+                    state = state_object_key;
+                    call_on_new_object();
+                    break;
+                case '[': // new array
+                    stack.push<state_array_item>();
+                    state = state_array_item;
+                    call_on_new_array();
+                    break;
+                case '}': // object end
+                    call_on_object_end();
+                    stack.pop();
+                    state = static_cast<parser_state>(stack.top());
+                    break;
+                case ']': // array end
+                    call_on_array_end();
+                    state = static_cast<parser_state>(stack.top());
+                    stack.pop();
+                    break;
+                case ',':
+                    state = static_cast<parser_state>(stack.top());
+                    break;
+                case ':':
+                    state = state_object_value;
+                    break;
+                case '\'': // object key, or array item
+                case '"': // object key, or array item
+                    {
+                        const auto quote = *s;
+                        const auto k = ++s;
+                        s = skip_to_end_of_string(quote, s);
+                        switch (state)
                         {
-                            const auto quote = *s;
-                            const auto k = ++s;
-                            s = skip_to_end_of_string(quote, s);
-                            if (depth.is_object_on_top())
-                            {
+                            case state_object_key:
                                 call_on_key(k, s);
-                            }
-                            else
-                            {
+                                break;
+                            case state_object_value:
+                                call_on_value(k, s);
+                                break;
+                            case state_array_item:
                                 call_on_array(k, s);
-                            }
+                                break;
                         }
-                        break;
-                    case '}': // object end
-                        call_on_object_end();
-                        depth.pop();
-                        break;
-                    case ']': // array end
-                        call_on_array_end();
-                        depth.pop();
-                        break;
-                    case ',':
-                        break;
-                    case ':':
-                        state = parser_state::value;
-                        break;
-                }
-                ++s;
+                    }
+                    break;
+                case 'n': // null
+                    if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
+                    {
+                        s += 4;
+                    }
+                    break;
+                case 't': // true
+                    if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
+                    {
+                        call_on_bool<true>();
+                        s += 3;
+                    }
+                    break;
+                case 'f': // false
+                    if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
+                    {
+                        call_on_bool<false>();
+                        s += 5;
+                    }
+                    break;
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case '-':
+                    ++s;
+                    while (*s >= '0' && *s <= '9') ++s;
+                    break;
             }
-            else
-            {
-                switch (*s)
-                {
-                    case '\'':
-                    case '"':
-                        {
-                            const auto quote = *s;
-                            const auto k = ++s;
-                            s = skip_to_end_of_string(quote, s);
-                            call_on_value(k, s);
-                            ++s;
-                        }
-                        break;
-                    case 'n': // null
-                        if (s[1] == 'u' && s[2] == 'l' && s[3] == 'l' && is_separator(s[4]))
-                        {
-                            s += 4;
-                        }
-                        break;
-                    case 't': // true
-                        if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
-                        {
-                            call_on_bool<true>();
-                            s += 3;
-                        }
-                        break;
-                    case 'f': // false
-                        if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
-                        {
-                            call_on_bool<false>();
-                            s += 5;
-                        }
-                        break;
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                    case '8':
-                    case '9':
-                    case '-':
-                        ++s;
-                        while (*s >= '0' && *s <= '9') ++s;
-                        break;
-                }
-                state = parser_state::key;
-            }
+            ++s;
         }
         while (*s);
     }
