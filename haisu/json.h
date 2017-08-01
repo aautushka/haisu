@@ -189,6 +189,14 @@ auto call_array_end(T& t, int) -> decltype(t.on_array_end(), void())
 
 template <typename T> void call_array_end(T&, long) {}
 
+template <typename T>
+auto call_error(T& t, const char* pos, int) -> decltype(t.on_error(pos), void())
+{
+    t.on_error(pos);
+}
+
+template <typename T> void call_error(T& t, const char* pos, long) {}
+
 template <typename T, int N>
 class static_stack
 {
@@ -589,6 +597,10 @@ public:
                         }
                         s += 4;
                     }
+                    else // malformed literal
+                    {
+                        return call_on_error(s);
+                    }
                     break;
                 case 't': // true
                     if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
@@ -600,6 +612,10 @@ public:
                         }
                         s += 3;
                     }
+                    else // malformed literal
+                    {
+                        return call_on_error(s);
+                    }
                     break;
                 case 'f': // false
                     if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
@@ -610,6 +626,10 @@ public:
                             case state_array_item: call_on_bool_array<false>(); break;
                         }
                         s += 5;
+                    }
+                    else // malformed literal
+                    {
+                        return call_on_error(s);
                     }
                     break;
                 case '0':
@@ -624,7 +644,7 @@ public:
                 case '9':
                 case '-':
                     ++s;
-                    while (*s >= '0' && *s <= '9') ++s;
+                    while (*s >= '0' && *s <= '9' || *s == '.') ++s;
                     break;
             }
             ++s;
@@ -660,12 +680,14 @@ private:
         call_array(*static_cast<T*>(this), bool_literal{B}, 0);
     }
 
-    void call_on_int_value()
+    void call_on_int_value(int64_t value)
     {
+        call_value(*static_cast<T*>(this), int_literal{value}, 0);
     }
 
-    void call_on_int_array()
+    void call_on_int_array(int64_t value)
     {
+        call_array(*static_cast<T*>(this), int_literal{value}, 0);
     }
     
     void call_on_null_value()
@@ -696,6 +718,11 @@ private:
     void call_on_array_end()
     {
         call_array_end(*static_cast<T*>(this), 0);
+    }
+
+    void call_on_error(const char* pos)
+    {
+        call_error(*static_cast<T*>(this), pos, 0);
     }
 };
 

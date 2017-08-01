@@ -10,6 +10,7 @@ std::string empty_json = "{}";
 std::string deep_json = "{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"j\":{\"h\":{\"i\":{\"j\":{\"k\":{\"l\":{\"m\":{\"n\":{\"o\":{\"p\":{\"q\":{\"r\":\"s\"}}}}}}}}}}}}}}}}}}";
 std::string array_of_arrays = "[[\"a\"], [\"b\"], [\"c\"], [\"d\"],[\"e\"],[\"f\"],[\"g\"],[\"h\"]]";
 std::string array_of_objects = "[{\"a\":\"b\"},{\"c\":\"d\"},{\"e\":\"f\"},{\"g\":\"h\"},{\"i\",\"j\"},{\"k\":\"l\"},{\"m\":\"n\"}]";
+std::string literals = "[true, false, true, null, null, true, false, null, true, false, null, true, false, null]";
 
 class gason_parser
 {
@@ -24,8 +25,27 @@ private:
     JsonAllocator alloc;
 };
 
-class json_parser : public haisu::json::parser<json_parser>
+struct json_parser : public haisu::json::parser<json_parser>
 {
+    template <typename Literal>
+    void on_value(Literal&&)
+    {
+        ++literals;
+    }
+
+    template <typename Literal>
+    void on_array(Literal&&)
+    {
+        ++literals;
+    }
+
+    template <typename Literal>
+    void on_key(Literal&&)
+    {
+        ++literals;
+    }
+    
+    int literals{};
 };
 
 
@@ -72,3 +92,6 @@ BENCHMARK_CAPTURE(bench_haisu_json, haisu_array_of_arrays, array_of_arrays);
 
 BENCHMARK_CAPTURE(bench_gason_json, gason_array_of_objects, array_of_objects);
 BENCHMARK_CAPTURE(bench_haisu_json, haisu_array_of_objects, array_of_objects);
+
+BENCHMARK_CAPTURE(bench_gason_json, gason_literals, literals);
+BENCHMARK_CAPTURE(bench_haisu_json, haisu_literals, literals);
