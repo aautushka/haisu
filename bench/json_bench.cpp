@@ -1,6 +1,7 @@
 #include "benchmark/benchmark.h"
 #include "haisu/json.h"
 #include "gason.h"
+#include "js0n/js0n.h"
 
 std::string nested_json = "{\"a\" : { \"b\" : { \"c\" : { \"d\" : { \"e\" : { \"f\" : \"g\"} } } } } }";
 std::string flat_json = "{\"a\" : \"b\", \"c\" : \"d\", \"e\" : \"f\", \"g\" : \"h\", \"i\" : \"j\", \"k\" : \"l\", \"m\" : \"n\"}";
@@ -48,50 +49,80 @@ struct json_parser : public haisu::json::parser<json_parser>
     int literals{};
 };
 
+struct js0n_parser
+{
+    void parse(const char* str)
+    {
+        size_t vlen{};
+        js0n("z", 1, str, strlen(str), &vlen);
+    }
+};
 
-static void bench_gason_json(benchmark::State& state, std::string json) 
+static void bench_gason(benchmark::State& state, std::string json) 
 {    
     gason_parser parser;
+    std::string j;
     while (state.KeepRunning())
     {
-        std::string j = json;
+        j = json;
         parser.parse(&j[0]);
     }
 }
 
-static void bench_haisu_json(benchmark::State& state, std::string json)
+static void bench_haisu(benchmark::State& state, std::string json)
 {
     json_parser parser;
+    std::string j;
     while (state.KeepRunning())
     {
-        std::string j = json;
+        j = json;
         parser.parse(j.c_str());
     }
 }
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_nested_json, nested_json);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_nested_json, nested_json);
+static void bench_js0n(benchmark::State& state, std::string json)
+{
+    js0n_parser parser;
+    std::string j;
+    while (state.KeepRunning())
+    {
+        j = json;
+        parser.parse(j.c_str());
+    }
+}
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_deep_json, deep_json);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_deep_json, deep_json);
+BENCHMARK_CAPTURE(bench_gason, gason_nested_json, nested_json);
+BENCHMARK_CAPTURE(bench_haisu, haisu_nested_json, nested_json);
+BENCHMARK_CAPTURE(bench_js0n, js0n_nested_json, nested_json);
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_empty_json, empty_json);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_empty_json, empty_json);
+BENCHMARK_CAPTURE(bench_gason, gason_deep_json, deep_json);
+BENCHMARK_CAPTURE(bench_haisu, haisu_deep_json, deep_json);
+BENCHMARK_CAPTURE(bench_js0n, js0n_deep_json, deep_json);
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_flat_json, flat_json);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_flat_json, flat_json);
+BENCHMARK_CAPTURE(bench_gason, gason_empty_json, empty_json);
+BENCHMARK_CAPTURE(bench_haisu, haisu_empty_json, empty_json);
+BENCHMARK_CAPTURE(bench_js0n, js0n_empty_json, deep_json);
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_flat_array, flat_array);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_flat_array, flat_array);
+BENCHMARK_CAPTURE(bench_gason, gason_flat_json, flat_json);
+BENCHMARK_CAPTURE(bench_haisu, haisu_flat_json, flat_json);
+BENCHMARK_CAPTURE(bench_js0n, js0n_flat_json, flat_json);
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_long_names, long_names);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_long_names, long_names);
+BENCHMARK_CAPTURE(bench_gason, gason_flat_array, flat_array);
+BENCHMARK_CAPTURE(bench_haisu, haisu_flat_array, flat_array);
+BENCHMARK_CAPTURE(bench_js0n, js0n_flat_array, flat_array);
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_array_of_arrays, array_of_arrays);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_array_of_arrays, array_of_arrays);
+BENCHMARK_CAPTURE(bench_gason, gason_long_names, long_names);
+BENCHMARK_CAPTURE(bench_haisu, haisu_long_names, long_names);
+BENCHMARK_CAPTURE(bench_js0n, js0n_long_names, long_names);
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_array_of_objects, array_of_objects);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_array_of_objects, array_of_objects);
+BENCHMARK_CAPTURE(bench_gason, gason_array_of_arrays, array_of_arrays);
+BENCHMARK_CAPTURE(bench_haisu, haisu_array_of_arrays, array_of_arrays);
+BENCHMARK_CAPTURE(bench_js0n, js0n_array_of_arrays, array_of_arrays);
 
-BENCHMARK_CAPTURE(bench_gason_json, gason_literals, literals);
-BENCHMARK_CAPTURE(bench_haisu_json, haisu_literals, literals);
+BENCHMARK_CAPTURE(bench_gason, gason_array_of_objects, array_of_objects);
+BENCHMARK_CAPTURE(bench_haisu, haisu_array_of_objects, array_of_objects);
+BENCHMARK_CAPTURE(bench_js0n, js0n_array_of_objects, array_of_objects);
+
+BENCHMARK_CAPTURE(bench_gason, gason_literals, literals);
+BENCHMARK_CAPTURE(bench_haisu, haisu_literals, literals);
+BENCHMARK_CAPTURE(bench_js0n, js0n_literals, literals);

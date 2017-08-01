@@ -8,6 +8,8 @@ set(SRC
   # partition_bench
   # mono_hash_bench
   json_bench
+  js0n/js0n.h
+  js0n/js0n.c
 ) 
 
 add_executable(bench ${SRC})
