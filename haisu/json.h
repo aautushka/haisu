@@ -40,8 +40,6 @@ namespace haisu
 namespace json
 {
 
-using string_view = std::experimental::string_view;
-
 inline bool is_blank(char ch)
 {
     return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
@@ -129,51 +127,35 @@ public:
 private:
 };
 
-template <typename T>
-auto call_key(T& t, const char* first, const char* last, int) -> decltype(t.on_key(first, last), void())
+template <typename T, typename Literal>
+auto call_key(T& t, Literal&& lit, int) -> decltype(t.on_key(std::forward<Literal>(lit)), void())
 {
-    t.on_key(first, last);
+    t.on_key(std::forward<Literal>(lit));
 }
 
-template <typename T>
-void call_key(T&t, const char* first, const char* last, long)
-{
-}
-
-template <typename T>
-auto call_value(T& t, const char* first, const char* last, int) -> decltype(t.on_value(first, last), void())
-{
-    t.on_value(first, last);
-}
-
-template <typename T>
-void call_value(T&t, const char* first, const char* last, long)
+template <typename T, typename Literal>
+void call_key(T&t, Literal&&, long)
 {
 }
 
-template <bool B, typename T>
-auto call_bool_value(T& t, int) -> decltype(t.on_value(B), void())
+template <typename T, typename Literal>
+auto call_value(T& t, Literal&& lit, int) -> decltype(t.on_value(std::forward<Literal>(lit)), void())
 {
-    t.on_value(B);
+    t.on_value(std::forward<Literal>(lit));
 }
 
-template <bool B, typename T> void call_bool_value(T&t, long) {}
-
-template <bool B, typename T>
-auto call_bool_array(T& t, int) -> decltype(t.on_array(B), void())
+template <typename T, typename Literal>
+void call_value(T&t, Literal&&, long)
 {
-    t.on_array(B);
 }
 
-template <bool B, typename T> void call_bool_array(T& t, long) {}
-
-template <typename T>
-auto call_array(T& t, const char* first, const char* last, int) -> decltype(t.on_array(first, last), void())
+template <typename T, typename Literal>
+auto call_array(T& t, Literal&& lit, int) -> decltype(t.on_array(std::forward<Literal>(lit)), void())
 {
-    t.on_array(first, last);
+    t.on_array(std::forward<Literal>(lit));
 }
 
-template <typename T> void call_array(T&, const char*, const char*, long) { }
+template <typename T, typename Literal> void call_array(T&, Literal&&, long) { }
 
 template <typename T>
 auto call_new_object(T& t, int) -> decltype(t.on_new_object(), void())
@@ -515,6 +497,11 @@ private:
     uint8_t stack_[N];    
 };
 
+using string_literal = std::experimental::string_view;
+struct null_literal {};
+struct bool_literal {bool value;};
+struct int_literal {int64_t value;};
+
 template <typename T>
 class parser
 {
@@ -527,6 +514,7 @@ class parser
     };
 
 public:
+
     void start_object();
     void end_object();
     
@@ -647,29 +635,29 @@ public:
 private:
     void call_on_key(const char* str, const char* end)
     {
-        call_key(*static_cast<T*>(this), str, end, 0);
+        call_key(*static_cast<T*>(this), string_literal(str, end - str), 0);
     }
 
     void call_on_value(const char* str, const char* end)
     {
-        call_value(*static_cast<T*>(this), str, end, 0);
+        call_value(*static_cast<T*>(this), string_literal(str, end - str), 0);
     }
 
     void call_on_array(const char* str, const char* end)
     {
-        call_array(*static_cast<T*>(this), str, end, 0);
+        call_array(*static_cast<T*>(this), string_literal(str, end - str), 0);
     }
 
     template <bool B>
     void call_on_bool_value()
     {
-        call_bool_value<B>(*static_cast<T*>(this), 0);
+        call_value(*static_cast<T*>(this), bool_literal{B}, 0);
     }
 
     template <bool B>
     void call_on_bool_array()
     {
-        call_bool_array<B>(*static_cast<T*>(this), 0);
+        call_array(*static_cast<T*>(this), bool_literal{B}, 0);
     }
 
     void call_on_int_value()
@@ -682,12 +670,12 @@ private:
     
     void call_on_null_value()
     {
-        //call_null_value(*static_cast<T*>(this));
+        call_value(*static_cast<T*>(this), null_literal{}, 0);
     }
 
     void call_on_null_array()
     {
-        //call_null_array(*static_cast<T*>(this));
+        call_array(*static_cast<T*>(this), null_literal{}, 0);
     }
 
     void call_on_new_object()
@@ -714,19 +702,18 @@ private:
 class model : public parser<model>
 {
 public:
-    void on_key(const char* str, const char* end)
+    template <typename Literal>
+    void on_key(Literal&&)
     {
     }
 
-    void on_value(const char* str, const char* end)
+    template <typename Literal>
+    void on_value(Literal&&)
     {
     }
 
-    void on_value(bool)
-    {
-    }
-
-    void on_array(const char* str, const char* end)
+    template <typename Literal>
+    void on_array(Literal&&)
     {
     }
 

@@ -26,23 +26,32 @@ SOFTWARE.
 
 #include "haisu/json.h"
 #include "haisu/tree.h"
+    
+using string_literal = haisu::json::string_literal;
+using bool_literal = haisu::json::bool_literal;
+using null_literal = haisu::json::null_literal;
 
 class object : public haisu::json::parser<object>
 {
 public:
-    void on_key(const char* str, const char* end)
+    void on_key(string_literal lit)
     {
-        path_.back() = std::string(str, end);
+        path_.back() = std::string(lit.begin(), lit.end());
     }
 
-    void on_value(const char* str, const char* end)
+    void on_value(string_literal lit)
     {
-        tree_[path_] = std::string(str, end);
+        tree_[path_] = std::string(lit.begin(), lit.end());
     }
 
-    void on_value(bool value)
+    void on_value(bool_literal lit)
     {
-        tree_[path_] = value ? "boolean true" : "boolean false";
+        tree_[path_] = lit.value ? "boolean true" : "boolean false";
+    }
+
+    void on_value(null_literal lit)
+    {
+        tree_[path_] = "null literal";
     }
 
     void on_new_object()
@@ -79,14 +88,20 @@ private:
 class array : public haisu::json::parser<array>
 {
 public:
-    void on_array(const char* first, const char* last)
+
+    void on_array(string_literal lit)
     {
-        _arr.push_back(std::string(first, last));
+        _arr.emplace_back(lit.begin(), lit.end());
     }
 
-    void on_array(bool val)
+    void on_array(bool_literal lit)
     {
-        _arr.push_back(val ? "boolean true" : "boolean false");
+        _arr.push_back(lit.value ? "boolean true" : "boolean false");
+    }
+
+    void on_array(null_literal lit)
+    {
+        _arr.push_back("null literal");
     }
 
     size_t size() const
@@ -202,8 +217,8 @@ TEST_F(json_test, skips_null_value)
 {
     arr.parse("[null,'a','b']");
 
-    EXPECT_EQ("a", arr[0]);
-    EXPECT_EQ("b", arr[1]);
+    EXPECT_EQ("a", arr[1]);
+    EXPECT_EQ("b", arr[2]);
 }
 
 TEST_F(json_test, reads_boolean_true_in_array)
@@ -248,5 +263,18 @@ TEST_F(json_test, reads_boolean_false_in_object)
 {
     json.parse("{'a': false}");
     EXPECT_EQ("boolean false", json["a"]);
+}
+
+TEST_F(json_test, reads_null_literal_from_object)
+{
+    json.parse("{'a': null}");
+    EXPECT_EQ("null literal", json["a"]);
+}
+
+TEST_F(json_test, reads_null_literal_from_array)
+{
+    arr.parse("[null]");
+    ASSERT_EQ(1, arr.size());
+    EXPECT_EQ("null literal", arr[0]);
 }
 
