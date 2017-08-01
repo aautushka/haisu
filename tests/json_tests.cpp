@@ -118,12 +118,27 @@ private:
     std::vector<std::string> _arr;
 };
 
+struct error_counter : public haisu::json::parser<error_counter>
+{
+    void on_error(haisu::json::error err)
+    {
+        ++error_count;
+    }
+
+    bool has_errors() const
+    {
+        return error_count > 0;
+    }
+
+    int error_count{};
+};
+
 struct json_test : ::testing::Test
 {
     using path = std::vector<std::string>;
     object json;
     array arr;
-
+    error_counter err;
 };
 
 TEST_F(json_test, parses_json_having_one_pair)
@@ -278,3 +293,62 @@ TEST_F(json_test, reads_null_literal_from_array)
     EXPECT_EQ("null literal", arr[0]);
 }
 
+TEST_F(json_test, signals_unexpected_character_error)
+{
+    err.parse("abc");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, no_errors_found)
+{
+    err.parse("{}");
+    EXPECT_FALSE(err.has_errors());
+}
+
+TEST_F(json_test, invalid_true_literal_error)
+{
+    err.parse("[truee]");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, invalid_false_literal)
+{
+    err.parse("[falses]");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, invalid_null_literal)
+{
+    err.parse("[nulll]");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, imcomplete_json_error)
+{
+    err.parse("[null, ");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, malformed_object_error)
+{
+    err.parse("{}}");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, malformed_array_error)
+{
+    err.parse("{}}");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, invalid_number_literal)
+{
+    err.parse("[1234aadf]");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, incomplete_string_literal_error)
+{
+    err.parse("['hello");
+    EXPECT_TRUE(err.has_errors());
+}

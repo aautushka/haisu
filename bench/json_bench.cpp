@@ -44,7 +44,7 @@ struct json_parser : public haisu::json::parser<json_parser>
     {
         ++literals;
     }
-    
+
     int literals{};
 };
 

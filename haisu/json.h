@@ -30,7 +30,6 @@ SOFTWARE.
 
 // TODO
 // integer value
-// escaped quotes inside of a string
 
 namespace haisu
 {
@@ -254,6 +253,11 @@ public:
     T empty() const noexcept
     {
         return cur_ == N;
+    }
+
+    size_type size() const noexcept
+    {
+        return N - cur_;
     }
 
 private:
@@ -558,6 +562,7 @@ public:
     {
         static_stack<int8_t, 64> stack;
         parser_state state = state_bad;
+        stack.push(state_bad);
 
         do
         {
@@ -576,30 +581,49 @@ public:
                     call_on_new_array();
                     break;
                 case '}': // object end
-                    if (!stack.empty())
+                    if constexpr (!has_error_handler()) // assume no errors possible
                     {
                         call_on_object_end();
                         stack.pop();
                         state = static_cast<parser_state>(stack.top());
+                        break;
                     }
-                    else if (has_error_handler())
+                    else
                     {
-                        return call_on_error(s);
+                        if (stack.size() >= 2)
+                        {
+                            call_on_object_end();
+                            stack.pop();
+                            state = static_cast<parser_state>(stack.top());
+                            break;
+                        }
+                        else
+                        {
+                            return call_on_error(s);
+                        }
                     }
-                    break;
                 case ']': // array end
-                    if (!stack.empty())
+                    if constexpr (!has_error_handler()) // assume no errors possible
                     {
                         call_on_array_end();
                         state = static_cast<parser_state>(stack.top());
                         stack.pop();
                         break;
                     }
-                    else if (has_error_handler())
+                    else
                     {
-                        return call_on_error(s);
+                        if (stack.size() >= 2)
+                        {
+                            call_on_array_end();
+                            state = static_cast<parser_state>(stack.top());
+                            stack.pop();
+                            break;
+                        }
+                        else
+                        {
+                            return call_on_error(s);
+                        }
                     }
-                    break;
                 case ',':
                     state = static_cast<parser_state>(stack.top());
                     break;
@@ -685,12 +709,17 @@ public:
                     ++s;
                     while (*s >= '0' && *s <= '9' || *s == '.') ++s;
                     break;
+                default:
+                    if (has_error_handler())
+                    {
+                        return call_on_error(s);
+                    }
             }
             ++s;
         }
         while (*s);
 
-        if (has_error_handler() && !stack.empty())
+        if (has_error_handler() && (stack.size() != 1 || stack.top() != state_bad))
         {
             call_on_error(s);
         }
