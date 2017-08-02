@@ -195,3 +195,9 @@ TEST_F(function_ref_test, deduces_lambda_argument_type_and_stores_function_point
     EXPECT_TRUE(f.safe_to_store());
 }
 
+TEST_F(function_ref_test, throws_if_called_invalid_function)
+{
+    function_ref<int()> f;
+    EXPECT_THROW(f(), std::bad_function_call);
+}
+

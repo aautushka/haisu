@@ -24,7 +24,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <typeinfo>
+#include <functional>
+#include <type_traits>
 
 namespace haisu
 {
@@ -41,6 +42,42 @@ struct casts_to_function_pointer : std::integral_constant<bool,
 {
 };
 
+class track_storage_safety
+{
+public:
+    void mark_safe() noexcept
+    {
+        safe_to_store_ = true;
+    }
+
+    void mark_unsafe() noexcept
+    {
+        safe_to_store_ = false;
+    }
+
+    bool safe_to_store() const noexcept
+    {
+        return safe_to_store_;
+    }
+
+    void swap(track_storage_safety& rhs) noexcept
+    {
+        std::swap(safe_to_store_, rhs.safe_to_store_);
+    }
+
+private:
+    bool safe_to_store_{true};
+};
+
+class no_storage_safety_tracker
+{
+public:
+    void mark_safe() noexcept {}
+    void mark_unsafe() noexcept {}
+    bool safe_to_store() const noexcept {return false;}
+    void swap(no_storage_safety_tracker&) noexcept {}
+};
+
 // This is a generic function reference class inspired by LLVM's function_ref.
 // There are some differences though:
 // 1) haisu::function_ref stores function pointers directly, which allows object to be safely copied and stored
@@ -51,9 +88,11 @@ template <typename T>
 class function_ref;
 
 template <typename Ret, typename ... Arg>
-class function_ref<Ret(Arg...)> final
+class function_ref<Ret(Arg...)> final : private track_storage_safety
 {
 public:
+    using track_storage_safety::safe_to_store;
+
     function_ref(const function_ref&) = default;
     function_ref& operator =(const function_ref&) = default;
 
@@ -101,7 +140,7 @@ public:
     {
         stored_func_ = std::addressof(callable);
         caller_ = call_stored_object<std::decay_t<Callable>>;
-        safe_to_store_ = false;
+        mark_unsafe();
         return *this;
     }
 
@@ -110,7 +149,7 @@ public:
     {
         stored_func_ = reinterpret_cast<void*>(func);
         caller_ = call_stored_function<decltype(func)>;
-        safe_to_store_ = true;
+        mark_safe();
         return *this;
     }
 
@@ -118,14 +157,14 @@ public:
     {
         stored_func_ = (void*)func;
         caller_ = call_stored_function<decltype(func)>;
-        safe_to_store_ = true;
+        mark_safe();
         return *this;
     }
 
     function_ref& assign(std::nullptr_t) noexcept
     {
-        safe_to_store_ = false;
-        caller_ = [](void*, Arg...) -> Ret {throw std::exception();};
+        mark_safe();
+        caller_ = [](void*, Arg...) -> Ret {throw std::bad_function_call();};
         stored_func_ = nullptr;
         return *this;
     }
@@ -142,16 +181,12 @@ public:
         return stored_func_ != nullptr;
     }
 
-    bool safe_to_store() const noexcept
-    {
-        return safe_to_store_;
-    }
-
     void swap(function_ref& rhs) noexcept
     {
         std::swap(stored_func_, rhs.stored_func_);
         std::swap(caller_, rhs.caller_);
-        std::swap(safe_to_store_, rhs.safe_to_store_);
+
+        this->track_storage_safety::swap(rhs);
     }
 
 private:
@@ -169,7 +204,6 @@ private:
 
     void* stored_func_{nullptr};
     Ret (*caller_)(void* f, Arg...);
-    bool safe_to_store_{true};
 };
 
 template <typename Ret, typename ... Args>
