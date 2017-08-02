@@ -34,6 +34,7 @@ set(SRC
   object_pool_tests
   heterogeneous_pool_tests
   small_any_tests
+  function_ref_tests
 )
 
 add_executable(tests ${SRC})
