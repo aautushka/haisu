@@ -26,11 +26,12 @@ SOFTWARE.
 #include <cstring>
 #include <experimental/string_view>
 
+#include "haisu/meta.h"
 #include "haisu/mono_stack.h"
 
-// TODO
-// number literals (including floating point numbers)
-// stop parsing upon request (for example, when a desired key/value pair was found and there is no need to continue) 
+// TODO:
+// signal error, if can't parse json because of it's depth
+// full validation on demand
 
 namespace haisu
 {
@@ -259,6 +260,16 @@ public:
     size_type size() const noexcept
     {
         return N - cur_;
+    }
+
+    void clear() noexcept
+    {
+        cur_ = N;
+    }
+
+    static size_type capacity() noexcept
+    {
+        return N;
     }
 
 private:
@@ -537,9 +548,22 @@ private:
 using string_literal = std::experimental::string_view;
 struct null_literal {};
 struct bool_literal {bool value;};
-struct int_literal {int64_t value;};
+struct number_literal { std::experimental::string_view value; };
 struct error { const char* position; };
 
+// A minimalistic JSON parser with following characteristics
+//     1) makes no memory allocations (but it uses stack memory alright)
+//     2) builds no DOM
+//     3) the parser is quite close to SAX philosophy, it provides a stream of events instead of DOM
+//     3) provides very limited validation
+//     4) relies on a CRTP derivee to sort out how it wants to handle the json
+//     5) a derivee may terminate parser at any moment by calling terminate()
+//     6) the maximum depth of json being parsed is limited (TODO: signal error when json is too deep to parse)
+//     7) does no string unescaping, relies on the derivee to sort that out
+//     8) does not parse numbers, numbers are presented as strings, relied on the derivee to sort that out
+//     9) same for unicode, let the derivee handle this
+//     10) the main focus of this parser is performance, i should be easily customizable when performance is at stake
+//        and some features may be left out (if I don't want doubles, why bother parsing them anyway?)
 template <typename T>
 class parser
 {
@@ -552,22 +576,15 @@ class parser
     };
 
 public:
-    void terminate()
+    // the input string must be null-terminated
+    void parse(const char* json_string)
     {
-        terminate_ = true;
-    }
-
-    void start_object();
-    void end_object();
-    
-    void start_array();
-    void end_array();
-    
-    void parse(const char* s)
-    {
-        static_stack<int8_t, 64> stack;
         parser_state state = state_bad;
-        stack.push(state_bad);
+        stack_.clear();
+        feed_ = json_string;
+        stack_.push(state_bad);
+
+        auto& s = feed_;
 
         do
         {
@@ -576,12 +593,12 @@ public:
             switch (*s)
             {
                 case '{': // new object
-                    stack.push<state_object_key>();
+                    stack_.push<state_object_key>();
                     state = state_object_key;
                     call_on_new_object();
                     break;
                 case '[': // new array
-                    stack.push<state_array_item>();
+                    stack_.push<state_array_item>();
                     state = state_array_item;
                     call_on_new_array();
                     break;
@@ -589,17 +606,17 @@ public:
                     if constexpr (!has_error_handler()) // assume no errors possible
                     {
                         call_on_object_end();
-                        stack.pop();
-                        state = static_cast<parser_state>(stack.top());
+                        stack_.pop();
+                        state = static_cast<parser_state>(stack_.top());
                         break;
                     }
                     else
                     {
-                        if (stack.size() >= 2)
+                        if (stack_.size() >= 2)
                         {
                             call_on_object_end();
-                            stack.pop();
-                            state = static_cast<parser_state>(stack.top());
+                            stack_.pop();
+                            state = static_cast<parser_state>(stack_.top());
                             break;
                         }
                         else
@@ -611,17 +628,17 @@ public:
                     if constexpr (!has_error_handler()) // assume no errors possible
                     {
                         call_on_array_end();
-                        state = static_cast<parser_state>(stack.top());
-                        stack.pop();
+                        state = static_cast<parser_state>(stack_.top());
+                        stack_.pop();
                         break;
                     }
                     else
                     {
-                        if (stack.size() >= 2)
+                        if (stack_.size() >= 2)
                         {
                             call_on_array_end();
-                            state = static_cast<parser_state>(stack.top());
-                            stack.pop();
+                            state = static_cast<parser_state>(stack_.top());
+                            stack_.pop();
                             break;
                         }
                         else
@@ -630,7 +647,7 @@ public:
                         }
                     }
                 case ',':
-                    state = static_cast<parser_state>(stack.top());
+                    state = static_cast<parser_state>(stack_.top());
                     break;
                 case ':':
                     state = state_object_value;
@@ -726,11 +743,17 @@ public:
 
         if constexpr (has_error_handler())
         {
-            if (stack.size() != 1 || stack.top() != state_bad)
+            if (stack_.size() != 1 || stack_.top() != state_bad)
             {
                 call_on_error(s);
             }
         }
+    }
+
+protected:
+    void terminate()
+    {
+        feed_ = "";
     }
 
 private:
@@ -763,12 +786,12 @@ private:
 
     void call_on_int_value(int64_t value)
     {
-        call_value(*static_cast<T*>(this), int_literal{value}, 0);
+        call_value(*static_cast<T*>(this), number_literal{value}, 0);
     }
 
     void call_on_int_array(int64_t value)
     {
-        call_array(*static_cast<T*>(this), int_literal{value}, 0);
+        call_array(*static_cast<T*>(this), number_literal{value}, 0);
     }
     
     void call_on_null_value()
@@ -811,43 +834,9 @@ private:
         return is_valid_expression<T>([](auto&& o) -> decltype(o.on_error(error{})) {});
     }
 
-    bool terminate_{false};
-};
-
-class model : public parser<model>
-{
-public:
-    template <typename Literal>
-    void on_key(Literal&&)
-    {
-    }
-
-    template <typename Literal>
-    void on_value(Literal&&)
-    {
-    }
-
-    template <typename Literal>
-    void on_array(Literal&&)
-    {
-    }
-
-    void on_new_object()
-    {
-    }
-
-    void on_new_array()
-    {
-    }
-
-    void on_object_end()
-    {
-    }
-
-    void on_array_end()
-    {
-    }
-private:
+    
+    static_stack<int8_t, 64> stack_;
+    const char* feed_;
 };
 
 } // namespace json

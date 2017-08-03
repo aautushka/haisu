@@ -352,3 +352,22 @@ TEST_F(json_test, incomplete_string_literal_error)
     err.parse("['hello");
     EXPECT_TRUE(err.has_errors());
 }
+
+TEST_F(json_test, terminates_json_parser_middle_way)
+{
+    struct parser : public haisu::json::parser<array>
+    {
+        void on_array(string_literal lit)
+        {
+            ++array_size;
+            terminate();
+        }
+
+        int array_size = 0;
+    };
+
+    parser p;
+    p.parse("['hello', 'world']");
+
+    EXPECT_EQ(1, p.array_size);
+}
