@@ -236,13 +236,15 @@ public:
     template <T val>
     void push() noexcept 
     {
-        assert(cur_ > 0);
+        assert(!full());
+
         stack_[--cur_] = val;
     }
 
     void push(T t) noexcept
     {
-        assert(cur_ > 0);
+        assert(!full());
+
         stack_[--cur_] = t;
     }
 
@@ -252,9 +254,14 @@ public:
         ++cur_;
     }
 
-    T empty() const noexcept
+    bool empty() const noexcept
     {
         return cur_ == N;
+    }
+
+    bool full() const noexcept
+    {
+        return cur_ == 0;
     }
 
     size_type size() const noexcept
@@ -567,6 +574,7 @@ struct error { const char* position; };
 template <typename T, int MaxDepth = 64>
 class parser
 {
+    static_assert(MaxDepth > 0, "MaxDepth is not allowed to be zero");
     enum parser_state
     {
         state_object_key,
@@ -593,11 +601,27 @@ public:
             switch (*s)
             {
                 case '{': // new object
+                    if constexpr (has_error_handler())
+                    {
+                        if (stack_.full())
+                        {
+                            return call_on_error(s);
+                        }
+                    }
+
                     stack_.template push<state_object_key>();
                     state = state_object_key;
                     call_on_new_object();
                     break;
                 case '[': // new array
+                    if constexpr (has_error_handler())
+                    {
+                        if (stack_.full())
+                        {
+                            return call_on_error(s);
+                        }
+                    }
+
                     stack_.template push<state_array_item>();
                     state = state_array_item;
                     call_on_new_array();

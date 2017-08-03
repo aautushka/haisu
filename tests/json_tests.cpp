@@ -355,7 +355,7 @@ TEST_F(json_test, incomplete_string_literal_error)
 
 TEST_F(json_test, terminates_json_parser_middle_way)
 {
-    struct parser : public haisu::json::parser<array>
+    struct parser : public haisu::json::parser<parser>
     {
         void on_array(string_literal lit)
         {
@@ -370,4 +370,21 @@ TEST_F(json_test, terminates_json_parser_middle_way)
     p.parse("['hello', 'world']");
 
     EXPECT_EQ(1, p.array_size);
+}
+
+TEST_F(json_test, signals_error_if_does_not_have_enough_memory)
+{
+    struct parser : public haisu::json::parser<parser, 1>
+    {
+        void on_error(haisu::json::error err)
+        {
+            ++error_count;
+        }
+        int error_count = 0;
+    };
+
+    parser p;
+    p.parse("['hello', 'world']");
+
+    EXPECT_EQ(1, p.error_count);
 }
