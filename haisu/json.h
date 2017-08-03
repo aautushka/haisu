@@ -564,15 +564,15 @@ struct error { const char* position; };
 //     9) same for unicode, let the derivee handle this
 //     10) the main focus of this parser is performance, i should be easily customizable when performance is at stake
 //        and some features may be left out (if I don't want doubles, why bother parsing them anyway?)
-template <typename T, int MaxDepth = 64>
+template <typename T>
 class parser
 {
     enum parser_state
     {
-        state_object_key = 0,
-        state_object_value = 1,
-        state_array_item = 2,
-        state_bad = 0xff
+        state_object_key,
+        state_object_value,
+        state_array_item,
+        state_bad
     };
 
 public:
@@ -582,7 +582,7 @@ public:
         parser_state state = state_bad;
         stack_.clear();
         feed_ = json_string;
-        //stack_.push(state_bad);
+        stack_.push(state_bad);
 
         auto& s = feed_;
 
@@ -593,12 +593,12 @@ public:
             switch (*s)
             {
                 case '{': // new object
-                    stack_.push<0>();
+                    stack_.push<state_object_key>();
                     state = state_object_key;
                     call_on_new_object();
                     break;
                 case '[': // new array
-                    //stack_.push<state_array_item>();
+                    stack_.push<state_array_item>();
                     state = state_array_item;
                     call_on_new_array();
                     break;
@@ -835,9 +835,10 @@ private:
     }
 
     
-    static_stack<int8_t, MaxDepth> stack_;
+    static_stack<int8_t, 64> stack_;
     const char* feed_;
 };
 
 } // namespace json
 } // namespace haisu
+
