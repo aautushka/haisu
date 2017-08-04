@@ -27,9 +27,13 @@ private:
     JsonAllocator alloc;
 };
 
-//struct json_parser : haisu::json::parser<json_parser>
-struct json_parser : haisu::json::model
+struct json_parser : haisu::json::parser<json_parser>
+//struct json_parser : haisu::json::model
 {
+    json_parser()
+    {
+    }
+
     template <typename Literal>
     void on_value(Literal&&)
     {
@@ -43,12 +47,33 @@ struct json_parser : haisu::json::model
     }
 
     template <typename Literal>
-    void on_key(Literal&&)
+    void on_key(Literal&& lit)
     {
         ++literals;
     }
 
+    void on_new_object()
+    {
+        ++depth;
+    }
+
+    void on_object_end()
+    {
+        --depth;
+    }
+
+    void on_new_array()
+    {
+        ++depth;
+    }
+
+    void on_array_end()
+    {
+        --depth;
+    }
+
     int literals{};
+    int depth{};
 };
 
 struct js0n_parser

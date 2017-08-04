@@ -530,11 +530,11 @@ struct error
 //     3) provides very limited validation
 //     4) relies on a CRTP derivee to sort out how it wants to handle the json
 //     5) a derivee may terminate parser at any moment by calling terminate()
-//     6) the maximum depth of json being parsed is limited (TODO: signal error when json is too deep to parse)
-//     7) does no string unescaping, relies on the derivee to sort that out
-//     8) does not parse numbers, numbers are presented as strings, relied on the derivee to sort that out
+//     6) the maximum depth of json being parsed is limited
+//     7) does no string unescaping, relies on the derivee
+//     8) does not parse numbers, numbers are presented as strings, passes that to the derivee
 //     9) same for unicode, let the derivee handle this
-//     10) the main focus of this parser is performance, i should be easily customizable when performance is at stake
+//     10) the main focus of this parser is performance, it should be easily customizable when performance is at stake
 //        and some features may be left out (if I don't want doubles, why bother parsing them anyway?)
 template <typename T, int MaxDepth = 64>
 class parser

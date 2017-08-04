@@ -353,7 +353,6 @@ private:
     {
         const auto offset = buf_.size();
         append_buf(object{0, lit});
-
         assert(offset + sizeof(jsonval) == buf_.size()); // in case zbuf changes and starts aligning data which would be a disaster
         assert(!stack_.empty()); // if this fires, then there is something wrong with the parser
 
