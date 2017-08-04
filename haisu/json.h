@@ -559,7 +559,8 @@ enum class error_code
     unspecified_error
 };
 
-using string_literal = std::experimental::string_view;
+using string_view = std::experimental::string_view;
+using string_literal = string_view;
 
 struct null_literal 
 {
@@ -570,9 +571,9 @@ struct bool_literal
     bool value;
 };
 
-struct number_literal 
+struct numeric_literal 
 { 
-    std::experimental::string_view value; 
+    string_view value; 
 };
 
 struct error 
@@ -694,6 +695,14 @@ public:
                         }
                     }
                 case ',':
+                    if constexpr (has_error_handler())
+                    {
+                        if (stack_.size() <= 1)
+                        {
+                            return call_on_error({s, error_code::malformed_json});
+                        }
+                    }
+
                     state = static_cast<parser_state>(stack_.top());
                     break;
                 case ':':
@@ -775,8 +784,42 @@ public:
                 case '8':
                 case '9':
                 case '-':
-                    ++s;
-                    while (*s >= '0' && *s <= '9' || *s == '.') ++s;
+                    {
+                        const auto k = s;
+                        do
+                        {
+                            ++s;
+                        }
+                        while (*s >= '0' && *s <= '9' || *s == '.' || *s =='e');
+
+                        if constexpr (has_error_handler())
+                        {
+                            if (!is_separator(*s))
+                            {
+                                return call_on_error({s, error_code::unexpected_character});
+                            }
+                        }
+
+                        // TODO: extract function
+                        const auto literal_ptr = k;
+                        const auto literal_size = size_t(s - k);
+                        auto literal = numeric_literal{string_view{literal_ptr, literal_size}};
+                        switch (state)
+                        {
+//                        TODO: do we allow numeric keys?
+//                        case state_object_key:
+//                            call_on_key(k, s);
+//                            break;
+//
+                            case state_object_value:
+                                call_on_value(literal);
+                                break;
+                            case state_array_item:
+                                call_on_array(literal);
+                                break;
+                        }
+                    }
+
                     break;
                 default:
                     if constexpr (has_error_handler())
@@ -831,14 +874,14 @@ private:
         call_array(*static_cast<T*>(this), bool_literal{B}, 0);
     }
 
-    void call_on_int_value(int64_t value)
+    void call_on_value(numeric_literal lit)
     {
-        call_value(*static_cast<T*>(this), number_literal{value}, 0);
+        call_value(*static_cast<T*>(this), lit, 0);
     }
 
-    void call_on_int_array(int64_t value)
+    void call_on_array(numeric_literal lit)
     {
-        call_array(*static_cast<T*>(this), number_literal{value}, 0);
+        call_array(*static_cast<T*>(this), lit, 0);
     }
     
     void call_on_null_value()

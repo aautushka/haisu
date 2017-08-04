@@ -30,6 +30,7 @@ SOFTWARE.
 using string_literal = haisu::json::string_literal;
 using bool_literal = haisu::json::bool_literal;
 using null_literal = haisu::json::null_literal;
+using numeric_literal = haisu::json::numeric_literal;
 
 class object : public haisu::json::parser<object>
 {
@@ -47,6 +48,11 @@ public:
     void on_value(bool_literal lit)
     {
         tree_[path_] = lit.value ? "boolean true" : "boolean false";
+    }
+
+    void on_value(numeric_literal lit)
+    {
+        tree_[path_] = std::string(lit.value.begin(), lit.value.end());
     }
 
     void on_value(null_literal lit)
@@ -102,6 +108,11 @@ public:
     void on_array(null_literal lit)
     {
         _arr.push_back("null literal");
+    }
+
+    void on_array(numeric_literal lit)
+    {
+        _arr.push_back(std::string(lit.value.begin(), lit.value.end()));
     }
 
     size_t size() const
@@ -387,4 +398,16 @@ TEST_F(json_test, signals_error_if_does_not_have_enough_memory)
     p.parse("['hello', 'world']");
 
     EXPECT_EQ(1, p.error_count);
+}
+
+TEST_F(json_test, parses_numeric_literal_in_object)
+{
+    json.parse("{'a':123456}");
+    EXPECT_EQ("123456", json["a"]);
+}
+
+TEST_F(json_test, parses_numeric_literal_in_array)
+{
+    arr.parse("[123456]");
+    EXPECT_EQ("123456", arr[0]);
 }
