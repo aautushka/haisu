@@ -30,7 +30,6 @@ SOFTWARE.
 #include "haisu/mono_stack.h"
 
 // TODO:
-// signal error, if can't parse json because of it's depth
 // full validation on demand
 
 namespace haisu
@@ -552,11 +551,35 @@ private:
     uint8_t stack_[N];    
 };
 
+enum class error_code
+{
+    json_too_deep_to_parse, // if you get this error, consider increasing the MaxDepth parameter in the parser
+    malformed_json, 
+    unexpected_character,
+    unspecified_error
+};
+
 using string_literal = std::experimental::string_view;
-struct null_literal {};
-struct bool_literal {bool value;};
-struct number_literal { std::experimental::string_view value; };
-struct error { const char* position; };
+
+struct null_literal 
+{
+};
+
+struct bool_literal 
+{
+    bool value;
+};
+
+struct number_literal 
+{ 
+    std::experimental::string_view value; 
+};
+
+struct error 
+{ 
+    const char* position; 
+    error_code err; 
+};
 
 // A minimalistic JSON parser with following characteristics
 //     1) makes no memory allocations (but it uses stack memory alright)
@@ -605,7 +628,7 @@ public:
                     {
                         if (stack_.full())
                         {
-                            return call_on_error(s);
+                            return call_on_error({s, error_code::json_too_deep_to_parse});
                         }
                     }
 
@@ -618,7 +641,7 @@ public:
                     {
                         if (stack_.full())
                         {
-                            return call_on_error(s);
+                            return call_on_error({s, error_code::json_too_deep_to_parse});
                         }
                     }
 
@@ -645,7 +668,7 @@ public:
                         }
                         else
                         {
-                            return call_on_error(s);
+                            return call_on_error({s, error_code::malformed_json});
                         }
                     }
                 case ']': // array end
@@ -667,7 +690,7 @@ public:
                         }
                         else
                         {
-                            return call_on_error(s);
+                            return call_on_error({s, error_code::malformed_json});
                         }
                     }
                 case ',':
@@ -709,7 +732,7 @@ public:
                     }
                     else if constexpr (has_error_handler())// malformed literal
                     {
-                        return call_on_error(s);
+                        return call_on_error({s, error_code::unexpected_character});
                     }
                 case 't': // true
                     if (s[1] == 'r' && s[2] == 'u' && s[3] == 'e' && is_separator(s[4]))
@@ -724,7 +747,7 @@ public:
                     }
                     else if constexpr (has_error_handler()) // malformed literal
                     {
-                        return call_on_error(s);
+                        return call_on_error({s, error_code::unexpected_character});
                     }
                 case 'f': // false
                     if (s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e' && is_separator(s[5]))
@@ -739,7 +762,7 @@ public:
                     }
                     else if constexpr (has_error_handler()) // malformed literal
                     {
-                        return call_on_error(s);
+                        return call_on_error({s, error_code::unexpected_character});
                     }
                 case '0':
                 case '1':
@@ -850,7 +873,12 @@ private:
 
     void call_on_error(const char* pos)
     {
-        call_error(*static_cast<T*>(this), error{pos}, 0);
+        call_on_error(error{pos, error_code::unspecified_error});
+    }
+
+    void call_on_error(error err)
+    {
+        call_error(*static_cast<T*>(this), err, 0);
     }
 
     static constexpr bool has_error_handler() noexcept
