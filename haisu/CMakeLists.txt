@@ -1,7 +1,7 @@
 project(tests CXX)
 
 set(SRC 
-  zmap
+  zmapi
   zbuf
   algo
   tls
@@ -24,4 +24,6 @@ set(SRC
   heterogeneous_pool
   small_any
   function_ref
+  json
+  json_model
 )

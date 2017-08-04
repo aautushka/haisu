@@ -151,82 +151,19 @@ public:
 private:
 };
 
-template <typename T, typename Literal>
-auto call_key(T& t, Literal&& lit, int) -> decltype(t.on_key(std::forward<Literal>(lit)), void())
-{
-    t.on_key(std::forward<Literal>(lit));
-}
-
-template <typename T, typename Literal>
-void call_key(T&t, Literal&&, long)
-{
-}
-
-template <typename T, typename Literal>
-auto call_value(T& t, Literal&& lit, int) -> decltype(t.on_value(std::forward<Literal>(lit)), void())
-{
-    t.on_value(std::forward<Literal>(lit));
-}
-
-template <typename T, typename Literal>
-void call_value(T&t, Literal&&, long)
-{
-}
-
-template <typename T, typename Literal>
-auto call_array(T& t, Literal&& lit, int) -> decltype(t.on_array(std::forward<Literal>(lit)), void())
-{
-    t.on_array(std::forward<Literal>(lit));
-}
-
-template <typename T, typename Literal> void call_array(T&, Literal&&, long) { }
-
-template <typename T>
-auto call_new_object(T& t, int) -> decltype(t.on_new_object(), void())
-{
-    t.on_new_object();
-}
-
-template <typename T> void call_new_object(T&, long) {}
-
-template <typename T>
-auto call_new_array(T& t, int) -> decltype(t.on_new_array(), void())
-{
-    t.on_new_array();
-}
-
-template <typename T> void call_new_array(T& t, long) {}
-
-template <typename T>
-auto call_object_end(T& t, int) -> decltype(t.on_object_end(), void())
-{
-    t.on_object_end();
-}
-
-template <typename T> void call_object_end(T&, long) {}
-
-template <typename T>
-auto call_array_end(T& t, int) -> decltype(t.on_array_end(), void())
-{
-    t.on_array_end();
-}
-
-template <typename T> void call_array_end(T&, long) {}
-
-template <typename T, typename Error>
-auto call_error(T& t, Error&& err, int) -> decltype(t.on_error(std::forward<Error>(err)), void())
-{
-    t.on_error(std::forward<Error>(err));
-}
-
-template <typename T, typename Error> void call_error(T&, Error&&, long) {}
 
 template <typename T, int N>
 class static_stack
 {
 public:
     using size_type = meta::memory_requirement_t<N>;
-    T top() const noexcept
+    const T& top() const noexcept
+    {
+        assert(cur_ < N);
+        return stack_[cur_];
+    }
+
+    T& top() noexcept
     {
         assert(cur_ < N);
         return stack_[cur_];
@@ -560,7 +497,11 @@ enum class error_code
 };
 
 using string_view = std::experimental::string_view;
-using string_literal = string_view;
+
+struct string_literal
+{
+    string_view view;
+};
 
 struct null_literal 
 {
@@ -573,7 +514,7 @@ struct bool_literal
 
 struct numeric_literal 
 { 
-    string_view value; 
+    string_view view; 
 };
 
 struct error 
@@ -849,17 +790,20 @@ protected:
 private:
     void call_on_key(const char* str, const char* end)
     {
-        call_key(*static_cast<T*>(this), string_literal(str, end - str), 0);
+        const auto view = string_view(str, end - str);
+        call_key(*static_cast<T*>(this), string_literal{view}, 0);
     }
 
     void call_on_value(const char* str, const char* end)
     {
-        call_value(*static_cast<T*>(this), string_literal(str, end - str), 0);
+        const auto view = string_view(str, end - str);
+        call_value(*static_cast<T*>(this), string_literal{view}, 0);
     }
 
     void call_on_array(const char* str, const char* end)
     {
-        call_array(*static_cast<T*>(this), string_literal(str, end - str), 0);
+        const auto view = string_view(str, end - str);
+        call_array(*static_cast<T*>(this), string_literal{view}, 0);
     }
 
     template <bool B>
@@ -929,8 +873,80 @@ private:
         return is_valid_expression<T>([](auto&& o) -> decltype(o.on_error(error{})) {});
     }
 
-    
-    static_stack<int8_t, MaxDepth> stack_;
+    template <typename U, typename Literal>
+    static auto call_key(U& t, Literal&& lit, int) -> decltype(t.on_key(std::forward<Literal>(lit)), void())
+    {
+        t.on_key(std::forward<Literal>(lit));
+    }
+
+    template <typename U, typename Literal>
+    static void call_key(U&t, Literal&&, long)
+    {
+    }
+
+    template <typename U, typename Literal>
+    static auto call_value(U& t, Literal&& lit, int) -> decltype(t.on_value(std::forward<Literal>(lit)), void())
+    {
+        t.on_value(std::forward<Literal>(lit));
+    }
+
+    template <typename U, typename Literal>
+    static void call_value(U&t, Literal&&, long)
+    {
+    }
+
+    template <typename U, typename Literal>
+    static auto call_array(U& t, Literal&& lit, int) -> decltype(t.on_array(std::forward<Literal>(lit)), void())
+    {
+        t.on_array(std::forward<Literal>(lit));
+    }
+
+    template <typename U, typename Literal> 
+    static void call_array(U&, Literal&&, long) { }
+
+    template <typename U>
+    static auto call_new_object(U& t, int) -> decltype(t.on_new_object(), void())
+    {
+        t.on_new_object();
+    }
+
+    template <typename U> 
+    static void call_new_object(U&, long) {}
+
+    template <typename U>
+    static auto call_new_array(U& t, int) -> decltype(t.on_new_array(), void())
+    {
+        t.on_new_array();
+    }
+
+    template <typename U> static void call_new_array(U& t, long) {}
+
+    template <typename U>
+    static auto call_object_end(U& t, int) -> decltype(t.on_object_end(), void())
+    {
+        t.on_object_end();
+    }
+
+    template <typename U> static void call_object_end(U&, long) {}
+
+    template <typename U>
+    static auto call_array_end(U& t, int) -> decltype(t.on_array_end(), void())
+    {
+        t.on_array_end();
+    }
+
+    template <typename U> static void call_array_end(U&, long) {}
+
+    template <typename U, typename Error>
+    static auto call_error(U& t, Error&& err, int) -> decltype(t.on_error(std::forward<Error>(err)), void())
+    {
+        t.on_error(std::forward<Error>(err));
+    }
+
+    template <typename U, typename Error> static void call_error(U&, Error&&, long) {}
+
+
+    static_stack<int8_t, MaxDepth + 1> stack_; // one element on the stack is reserved
     const char* feed_;
 };
 

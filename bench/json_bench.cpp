@@ -1,5 +1,6 @@
 #include "benchmark/benchmark.h"
 #include "haisu/json.h"
+#include "haisu/json_model.h"
 #include "gason.h"
 #include "js0n/js0n.h"
 
@@ -26,7 +27,8 @@ private:
     JsonAllocator alloc;
 };
 
-struct json_parser : public haisu::json::parser<json_parser>
+//struct json_parser : haisu::json::parser<json_parser>
+struct json_parser : haisu::json::model
 {
     template <typename Literal>
     void on_value(Literal&&)

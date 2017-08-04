@@ -33,7 +33,7 @@ namespace haisu
 class zbuf
 {
 public:
-    template <typename T> 
+    template <typename T, typename = std::enable_if_t<std::is_trivially_copyable<T>{}>> 
     void append(T t)
     {
         const size_t prev = buf.size();
@@ -42,16 +42,56 @@ public:
         memcpy(&buf[prev], &t, sz);
     }
 
-    template <typename T>
-    T at(size_t index) const
+    template <typename T, typename = std::enable_if_t<std::is_trivially_copyable<T>{}>> 
+    T& append()
     {
-        return *reinterpret_cast<const T*>(&buf[index * sizeof(T)]);
+        const size_t prev = buf.size();
+        const size_t sz = sizeof(T);
+        buf.resize(prev + sz);
+        return *reinterpret_cast<T*>(&buf[prev]);
+    }
+
+    template <typename T, typename = std::enable_if_t<std::is_trivially_copyable<T>{}>> 
+    T& append_modify(T t)
+    {
+        const size_t prev = buf.size();
+        const size_t sz = sizeof(t);
+        buf.resize(prev + sz);
+        memcpy(&buf[prev], &t, sz);
+        return *reinterpret_cast<T*>(&buf[prev]);
+    }
+
+    void append(const void* ptr, size_t len)
+    {
+        const size_t prev = buf.size();
+        buf.resize(prev + len);
+        memcpy(&buf[prev], &ptr, len);
     }
 
     template <typename T>
-    T& at(size_t index)
+    const T& at(size_t index) const noexcept
     {
-        return *reinterpret_cast<T*>(&buf[index * sizeof(T)]);
+        return at_offset<T>(index * sizeof(T));
+    }
+
+    template <typename T>
+    T& at(size_t index) noexcept
+    {
+        return at_offset<T>(index * sizeof(T));
+    }
+
+    template <typename T>
+    const T& at_offset(size_t offset) const noexcept
+    {
+        assert(offset < size() && size() - offset >= sizeof(T));
+        return *reinterpret_cast<const T*>(&buf[offset]);
+    }
+
+    template <typename T>
+    T& at_offset(size_t offset) noexcept
+    {
+        assert(offset < size() && size() - offset >= sizeof(T));
+        return *reinterpret_cast<T*>(&buf[offset]);
     }
 
     template <typename T>
@@ -86,6 +126,11 @@ public:
         return buf.size();
     }
 
+    bool empty() const noexcept
+    {
+        return buf.empty();
+    }
+
     size_t capacity() const noexcept
     {
         return buf.capacity();
@@ -116,7 +161,7 @@ private:
 };
 
 template <> inline
-void zbuf::append<const char*>(const char* t)
+void zbuf::append(const char* t)
 {
     const size_t prev = buf.size();
     const size_t sz = strlen(t) + 1;
@@ -148,7 +193,6 @@ void zbuf::insert<const char*>(size_t index, const char* t)
     memmove(dest, source, prev - index);
     memcpy(source, t, sz);
 }
-
 
 }
 

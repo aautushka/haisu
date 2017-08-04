@@ -37,12 +37,12 @@ class object : public haisu::json::parser<object>
 public:
     void on_key(string_literal lit)
     {
-        path_.back() = std::string(lit.begin(), lit.end());
+        path_.back() = std::string(lit.view.begin(), lit.view.end());
     }
 
     void on_value(string_literal lit)
     {
-        tree_[path_] = std::string(lit.begin(), lit.end());
+        tree_[path_] = std::string(lit.view.begin(), lit.view.end());
     }
 
     void on_value(bool_literal lit)
@@ -52,7 +52,7 @@ public:
 
     void on_value(numeric_literal lit)
     {
-        tree_[path_] = std::string(lit.value.begin(), lit.value.end());
+        tree_[path_] = std::string(lit.view.begin(), lit.view.end());
     }
 
     void on_value(null_literal lit)
@@ -97,7 +97,7 @@ public:
 
     void on_array(string_literal lit)
     {
-        _arr.emplace_back(lit.begin(), lit.end());
+        _arr.emplace_back(lit.view.begin(), lit.view.end());
     }
 
     void on_array(bool_literal lit)
@@ -112,7 +112,7 @@ public:
 
     void on_array(numeric_literal lit)
     {
-        _arr.push_back(std::string(lit.value.begin(), lit.value.end()));
+        _arr.push_back(std::string(lit.view.begin(), lit.view.end()));
     }
 
     size_t size() const
@@ -395,7 +395,7 @@ TEST_F(json_test, signals_error_if_does_not_have_enough_memory)
     };
 
     parser p;
-    p.parse("['hello', 'world']");
+    p.parse("[['hello']]");
 
     EXPECT_EQ(1, p.error_count);
 }

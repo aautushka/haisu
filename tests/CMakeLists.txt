@@ -35,6 +35,7 @@ set(SRC
   heterogeneous_pool_tests
   small_any_tests
   function_ref_tests
+  json_model_tests
 )
 
 add_executable(tests ${SRC})
