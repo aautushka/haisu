@@ -23,44 +23,11 @@ SOFTWARE.
 */
 
 #pragma once
+#include "haisu/memory_holder.h"
+#include "haisu/meta.h"
 
 namespace haisu
 {
-
-namespace detail
-{
-template <int N, class ... Ts> struct max_mem : std::integral_constant<int, N> {};
-
-template <int N, class T, class ... Ts>
-struct max_mem<N, T, Ts...> : std::integral_constant<int, max_mem<(N > sizeof(T) ? N : sizeof(T)), Ts...>::value> {};
-
-static_assert(4 == max_mem<0, int32_t>::value, "");
-static_assert(4 == max_mem<0, int16_t, int32_t>::value, "");
-static_assert(4 == max_mem<0, int32_t, int16_t>::value, "");
-static_assert(8 == max_mem<0, int8_t, int16_t, int32_t, int64_t>::value, "");
-
-template <class ... Ts>
-struct memory_holder
-{
-    uint8_t memory[max_mem<0, Ts...>::value];
-
-    template <typename U>
-    U* cast_memory()
-    {
-        return reinterpret_cast<U*>(memory);
-    }
-};
-
-template <typename ... Ts> struct contains;
-template <typename T> struct contains<T> : std::integral_constant<bool, false> {};
-template <typename T, typename ... Ts> struct contains<T, T, Ts...> : std::integral_constant<bool, true> {};
-template <typename T, typename U, typename ... Ts> struct contains<T, U, Ts...> : std::integral_constant<bool, contains<T, Ts...>::value>{};
-static_assert(contains<int, int>::value, "");
-static_assert(contains<int, char, short, int>::value, "");
-static_assert(!contains<int, char>::value, "");
-
-} // namespace detail
-
 
 template <int N, class ... Ts>
 class heterogeneous_pool
@@ -101,7 +68,7 @@ public:
     template <typename U>
     U* alloc()
     {
-        static_assert(detail::contains<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>::value, "");
 
         if (free_)
         {
@@ -117,7 +84,7 @@ public:
     template <typename U, typename ... Args>
     U* construct(Args&& ... args)
     {
-        static_assert(detail::contains<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>::value, "");
 
         if (free_)
         {
@@ -133,14 +100,14 @@ public:
     template <typename U>
     void dealloc(U* u)
     {
-        static_assert(detail::contains<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>::value, "");
         dealloc_no_type_check(u);
     }
 
     template <typename U>
     void destroy(U* u)
     {
-        static_assert(detail::contains<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>::value, "");
         assert(belongs(u));
 
         assert(belongs(u));
@@ -151,7 +118,7 @@ public:
     template <typename U>
     bool belongs(const U* u) const
     {
-        static_assert(detail::contains<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>::value, "");
 
         auto o = reinterpret_cast<const object*>(u);
         return o >= pool_ && o <= &pool_[N - 1];
@@ -195,7 +162,7 @@ private:
 
     union object
     {
-        detail::memory_holder<Ts...> obj;    
+        memory_holder<Ts...> obj;    
         object* next;
 
         object() {}

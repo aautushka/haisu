@@ -36,6 +36,7 @@ set(SRC
   small_any_tests
   function_ref_tests
   json_model_tests
+  trivial_variant_tests
 )
 
 add_executable(tests ${SRC})

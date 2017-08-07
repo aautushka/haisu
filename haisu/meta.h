@@ -29,6 +29,9 @@ namespace haisu
 namespace meta
 {
 
+//
+//memory_requirement_bytes
+//
 template <int N> struct memory_requirement_bytes;
 template <> struct memory_requirement_bytes<1> { using type = uint8_t; };
 template <> struct memory_requirement_bytes<2> { using type = uint16_t; };
@@ -46,6 +49,64 @@ struct memory_requirement
 };
 
 template <int N> using memory_requirement_t = typename memory_requirement<N>::type;
+
+//
+// one_of
+//
+template <typename ... Ts> struct one_of;
+template <typename T> struct one_of<T> : std::integral_constant<bool, false> {};
+template <typename T, typename ... Ts> struct one_of<T, T, Ts...> : std::integral_constant<bool, true> {};
+template <typename T, typename U, typename ... Ts> struct one_of<T, U, Ts...> : std::integral_constant<bool, one_of<T, Ts...>::value>{};
+
+static_assert(one_of<int, int>::value, "");
+static_assert(one_of<int, char, short, int>::value, "");
+static_assert(!one_of<int, char>::value, "");
+
+//
+// max_mem
+//
+template <int N, class ... Ts> struct max_mem : std::integral_constant<int, N> {};
+
+template <int N, class T, class ... Ts>
+struct max_mem<N, T, Ts...> : std::integral_constant<int, max_mem<(N > sizeof(T) ? N : sizeof(T)), Ts...>::value> {};
+
+static_assert(4 == max_mem<0, int32_t>::value, "");
+static_assert(4 == max_mem<0, int16_t, int32_t>::value, "");
+static_assert(4 == max_mem<0, int32_t, int16_t>::value, "");
+static_assert(8 == max_mem<0, int8_t, int16_t, int32_t, int64_t>::value, "");
+
+//
+// all_trivial_types
+// 
+template <typename ... Ts>
+struct all_trivial_types;
+
+template <>
+struct all_trivial_types<> : std::integral_constant<bool, true> {};
+
+template <typename T, typename ...Ts>
+struct all_trivial_types<T, Ts...> : std::integral_constant<bool, std::is_trivially_copyable<T>{} && all_trivial_types<Ts...>{}> {};
+
+static_assert(all_trivial_types<int, bool, double>{});
+static_assert(!all_trivial_types<int, std::string>{});
+
+//
+// index_of
+// 
+template <typename ... Ts>
+struct index_of;
+
+template <> struct index_of<> : std::integral_constant<int, -1>{};
+
+template <typename T, typename ... Ts>
+struct index_of<T, T, Ts...> : std::integral_constant<int, 0> {};
+
+template <typename T, typename U, typename ... Ts>
+struct index_of<T, U, Ts...> : std::integral_constant<int, 1 + index_of<T, Ts...>{}> {};
+
+static_assert(0 == index_of<int, int>{});
+static_assert(1 == index_of<int, char, int>{});
+static_assert(2 == index_of<int, char, long, int>{});
 
 } // namespace meta
 } // namespace haisu

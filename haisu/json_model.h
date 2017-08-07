@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 #include "haisu/json.h"
 #include "haisu/zbuf.h"
+#include "haisu/trivial_variant.h"
 
 #include <variant>
 
@@ -51,8 +52,11 @@ struct array : list_node
     size_t next;
 };
 
+using jsonval = haisu::trivial_variant<object, array, string_literal, null_literal, numeric_literal>;
+
 // cant' use std::variant because it is not trivially copyable
-struct jsonval
+
+/*struct jsonval2
 {
     enum value_type
     {
@@ -160,7 +164,7 @@ template <>
 const array* jsonval::get_if<array>() const noexcept
 {
     return type == type_array ? &get<array>() : nullptr;
-}
+}*/
 
 class model_view
 {
@@ -359,7 +363,7 @@ private:
         const auto prev_offset = stack_.top();
         if (prev_offset != npos)
         {
-            const auto prev_obj = &buf_.at_offset<object>(prev_offset);
+            const auto prev_obj = &buf_.at_offset<jsonval>(prev_offset).get<object>();
             prev_obj->next = offset; 
         }
         stack_.top() = offset;
@@ -392,7 +396,8 @@ private:
         append_buf(lit);
 
         const auto prev = stack_.top();
-        const auto arr = &buf_.at_offset<array>(prev);
+        
+        const auto arr = &buf_.at_offset<jsonval>(prev).get<array>();
 
         const auto offset = buf_.size();
         arr->next = buf_.size();
