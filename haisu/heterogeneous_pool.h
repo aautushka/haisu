@@ -68,7 +68,7 @@ public:
     template <typename U>
     U* alloc()
     {
-        static_assert(meta::one_of<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>{}, "");
 
         if (free_)
         {
@@ -84,7 +84,7 @@ public:
     template <typename U, typename ... Args>
     U* construct(Args&& ... args)
     {
-        static_assert(meta::one_of<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>{}, "");
 
         if (free_)
         {
@@ -100,14 +100,14 @@ public:
     template <typename U>
     void dealloc(U* u)
     {
-        static_assert(meta::one_of<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>{}, "");
         dealloc_no_type_check(u);
     }
 
     template <typename U>
     void destroy(U* u)
     {
-        static_assert(meta::one_of<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>{}, "");
         assert(belongs(u));
 
         assert(belongs(u));
@@ -118,7 +118,7 @@ public:
     template <typename U>
     bool belongs(const U* u) const
     {
-        static_assert(meta::one_of<U, Ts...>::value, "");
+        static_assert(meta::one_of<U, Ts...>{}, "");
 
         auto o = reinterpret_cast<const object*>(u);
         return o >= pool_ && o <= &pool_[N - 1];

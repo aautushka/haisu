@@ -79,7 +79,7 @@ public:
         set_empty_vtable();
     }
 
-    template <typename T, typename = std::enable_if_t<!std::is_same<std::decay_t<T>, stack_any>::value>>
+    template <typename T, typename = std::enable_if_t<!std::is_same<std::decay_t<T>, stack_any>{}>>
     stack_any(T&& t)
     {
         construct(std::forward<T>(t));

@@ -37,6 +37,7 @@ set(SRC
   function_ref_tests
   json_model_tests
   trivial_variant_tests
+  heap_pool_tests
 )
 
 add_executable(tests ${SRC})
