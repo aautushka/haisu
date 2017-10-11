@@ -731,7 +731,7 @@ public:
                         {
                             ++s;
                         }
-                        while (*s >= '0' && *s <= '9' || *s == '.' || *s =='e');
+                        while ((*s >= '0' && *s <= '9') || *s == '.' || *s =='e');
 
                         if constexpr (has_error_handler())
                         {
