@@ -193,3 +193,11 @@ TEST_F(mono_list_tests, fill_the_list_up_to_addressing_boundary)
 
     EXPECT_EQ(254, list.size());
 }
+
+TEST_F(mono_list_tests, creates_list_of_objects)
+{
+    haisu::mono::list<std::string, 1> list;
+    list.push_back(std::string(1024, 'x'));
+
+    EXPECT_TRUE(std::string(1024, 'x') == list.front());
+}

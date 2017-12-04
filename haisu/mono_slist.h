@@ -294,7 +294,7 @@ private:
     offset_type _free_list = 0;
     offset_type _head = nil;
     offset_type _tail = nil; 
-    node _buf[N];
+    std::array<node, N> _buf;
 };
 
 static_assert(sizeof(slist<int8_t, 2>) - sizeof(slist<int8_t, 1>) == 2, "");

@@ -239,7 +239,7 @@ private:
     size_type head = 0;
     size_type tail = 0;
     size_type count = 0;
-    T data[N];
+    std::array<T, N> data;
 };
 
 } // namespace mono

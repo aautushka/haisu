@@ -32,6 +32,10 @@ namespace haisu
 namespace mono
 {
 
+// TODO:
+//  1. call descructors on clear()
+//  2. do not default-construct objects
+//  3. explicitly desctory objects in dtor
 template <typename T, int N, typename Offset = meta::memory_requirement_t<N>>
 class list
 {
@@ -42,7 +46,7 @@ class list
 public:
     using size_type = offset_type;
     
-    list() noexcept
+    constexpr list() noexcept
     {
         clear_init();
     }
@@ -52,12 +56,12 @@ public:
     list(const list&&) = delete;
     list& operator =(const list&&) = delete;
 
-    list(std::initializer_list<T> ll)
+    constexpr list(std::initializer_list<T> ll)
     {
         *this = std::move(ll);
     }
 
-    list& operator =(std::initializer_list<T> ll)
+    constexpr list& operator =(std::initializer_list<T> ll)
     {
 
         for (auto l: ll)
@@ -68,7 +72,7 @@ public:
         return *this;
     }
 
-    void clear()
+    constexpr void clear()
     {
         // TODO: this does not call destructors
         if (_head != nil)
@@ -79,7 +83,7 @@ public:
         }    
     }
 
-    void push_back(T t)
+    constexpr void push_back(T t)
     {
         assert(!full());
 
@@ -100,7 +104,7 @@ public:
         }
     }
 
-    void push_front(T t)
+    constexpr void push_front(T t)
     {
         assert(!full());
         auto node = alloc();
@@ -120,41 +124,41 @@ public:
         }
     }
 
-    T& back()
+    constexpr T& back()
     {
         assert(!empty());
         return tail().t;
     }
 
-    const T& back() const
+    constexpr const T& back() const
     {
         assert(!empty());
         return tail().t;
     }
 
-    T& front()
+    constexpr T& front()
     {
         assert(!empty());
         return head().t;
     }
 
-    const T& front() const
+    constexpr const T& front() const
     {
         assert(!empty());
         return front().t;
     }
 
-    bool empty() const
+    constexpr bool empty() const
     {
         return (_head == nil);
     }
 
-    bool full() const
+    constexpr bool full() const
     {
         return _free_list == nil;
     }
 
-    size_type size() const
+    constexpr size_type size() const
     {
 
         size_type res = 0;
@@ -169,17 +173,17 @@ public:
         return res;
     }
 
-    size_type capacity() const
+    constexpr size_type capacity() const
     {
         return N;
     }
 
-    size_type max_size() const
+    constexpr size_type max_size() const
     {
         return N;
     }
 
-    T pop_back()
+    constexpr T pop_back()
     {
         assert(!empty());
         auto n = _tail;
@@ -196,7 +200,7 @@ public:
         return std::move(at(n).t);
     }
 
-    T pop_front()
+    constexpr T pop_front()
     {
         assert(!empty());
         auto n = _head;
@@ -222,7 +226,7 @@ private:
         offset_type next;
     };
 
-    void init(offset_type n)
+    constexpr void init(offset_type n) noexcept
     {
         _head = n;
         _tail = n;
@@ -231,7 +235,7 @@ private:
         _buf[n].prev = nil;
     }
     
-    void clear_init()
+    constexpr void clear_init()
     {
         for (int i = 0; i < N; ++i)
         {
@@ -242,44 +246,44 @@ private:
         _head = _tail = nil;
     }
 
-    node& tail()
+    constexpr node& tail() noexcept
     {
         return _buf[_tail];
     }
 
-    node& head()
+    constexpr node& head() noexcept
     {
         return _buf[_head];
     }
 
-    node& at(offset_type index)
+    constexpr node& at(offset_type index) noexcept
     {
         return _buf[index];
     }
 
-    const node& tail() const
+    constexpr const node& tail() const noexcept
     {
         return _buf[_tail];
     }
 
-    const node& head() const
+    constexpr const node& head() const noexcept
     {
         return _buf[_head];
     }
 
-    const node& at(offset_type index) const
+    constexpr const node& at(offset_type index) const noexcept
     {
         return _buf[index];
     }
 
-    offset_type alloc()
+    constexpr offset_type alloc() noexcept
     {
         auto node = _free_list;
         _free_list = _buf[node].next;
         return node;
     }
 
-    void free(offset_type n)
+    constexpr void free(offset_type n) noexcept
     {
         at(n).next = _free_list;
         _free_list = n;
@@ -288,7 +292,7 @@ private:
     offset_type _free_list = 0;
     offset_type _head = nil;
     offset_type _tail = nil; 
-    node _buf[N];
+    std::array<node, N> _buf;
 };
 
 static_assert(sizeof(list<int8_t, 2>) - sizeof(list<int8_t, 1>) == 3, "");

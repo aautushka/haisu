@@ -39,13 +39,18 @@ struct collide_hash
 
 struct do_assert
 {
-    void operator ()(const char* message) { assert(false);}
+    void operator ()(const char* message) { assert(message && false);}
 };
 
 template <typename Exception>
 struct do_throw
 {
     void operator ()(const char* message) { throw Exception(); }
+};
+
+struct do_nothing
+{
+    void operator ()(const char*) { }
 };
 
 template <typename T>

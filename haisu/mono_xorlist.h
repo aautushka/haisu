@@ -31,6 +31,10 @@ namespace haisu
 namespace mono
 {
 
+// TODO:
+//  1. call descructors on clear()
+//  2. do not default-construct objects
+//  3. explicitly desctory objects in dtor
 template <typename T, int N, typename Offset = meta::memory_requirement_t<N>>
 class xorlist
 {
@@ -68,7 +72,6 @@ public:
 
     void clear()
     {
-        // TODO: this does not call destructors
         if (_head != nil)
         {
             tail().link = _free_list;
@@ -288,7 +291,7 @@ private:
     offset_type _free_list = 0;
     offset_type _head = nil;
     offset_type _tail = nil; 
-    node _buf[N];
+    std::array<node, N> _buf;
 };
 
 static_assert(sizeof(xorlist<int8_t, 2>) - sizeof(xorlist<int8_t, 1>) == 2, "");
