@@ -1,7 +1,7 @@
 project(tests CXX)
 
 enable_testing()
-find_package(GTest REQUIRED)
+#find_package(GTest REQUIRED)
 include_directories (..)
 
 set(SRC 
