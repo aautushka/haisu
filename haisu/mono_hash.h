@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once
 #include <type_traits>
+#include <cassert>
 #include "meta.h"
 
 namespace haisu

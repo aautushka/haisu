@@ -128,18 +128,18 @@ public:
 
     void start()
     {
-        _started = now();
+        _elapsed = now() - _elapsed;
     }
 
     usec_t stop()
     {
-        _stopped = now();
+        _elapsed = now() - _elapsed;
         return elapsed();
     }
 
     usec_t elapsed()
     {
-        return _stopped - _started;
+        return _elapsed;
     }
 
     static usec_t now()
@@ -159,8 +159,7 @@ private:
         return (usec_t)time.tv_sec * 1000 * 1000 + time.tv_usec;
     }
 
-    usec_t _started = 0;
-    usec_t _stopped = 0;
+    usec_t _elapsed = 0;
 };
 
 template <typename T, int N>
@@ -183,6 +182,186 @@ public:
 
 private:
     mono::stack<usec_t, N> _stack;
+};
+
+// TODO:
+// 1. limit stack depth
+// 2. limit number of metrics stored
+// 3. contiguos object pool
+template <typename K, typename V>
+class trie
+{
+public:
+    using key_type = K;
+    using value_type = V;
+
+    ~trie()
+    {
+        foreach_node([](auto n){ delete n; });
+    }
+
+    value_type& up()
+    {
+        assert(cursor != nullptr);
+        auto& prev = cursor->value;
+        cursor = cursor->parent;
+        return prev;
+    }
+
+    value_type& down(key_type key)
+    {
+        if (cursor)
+        {
+            cursor = add_child(cursor, key);
+        }
+        else
+        {
+            if (root)
+            {
+                cursor = root;
+            }
+            else 
+            {
+                root = cursor = new_node();
+                root->key = key;
+            }
+        }
+        return cursor->value;
+    }
+
+    value_type& get()
+    {
+        assert(cursor != nullptr);
+        return cursor->value;
+    }
+
+    value_type& at(std::initializer_list<key_type>&& path)
+    {
+        node* res = nullptr;
+        for (auto p : path)
+        {
+            res = get_child(res, p);
+            assert(res);
+        }
+        return res->value;
+    }
+
+    bool has(std::initializer_list<key_type>&& path)
+    {
+        node* res = nullptr;
+        for (auto p : path)
+        {
+            res = get_child(res, p);
+            if (!res)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    value_type& create(std::initializer_list<key_type>&& path)
+    {
+        node* res = nullptr;
+        for (auto p: path)
+        {
+            res = create_child(res, p);
+        }
+
+        return res->value;
+    }
+
+private:
+    struct node 
+    {
+        key_type key;
+        value_type value;
+        node* parent;
+        node* child;
+        node* sibling;
+    };
+
+    node* new_node()
+    {
+        return new node{};
+    }
+
+    node* get_child(node* parent, key_type key)
+    {
+        if (parent)
+        {
+            auto child = parent->child;
+            while (child && child->key != key)
+            {
+                child = child->sibling;
+            }
+
+            return child;
+        }
+        else
+        {
+            if (root && key == root->key)
+            {
+                return root;
+            }
+        }
+
+        return nullptr;
+    }
+
+    node* add_child(node* p, key_type key)
+    {
+        if (!p->child)
+        {
+            auto child = new_node();
+            child->parent = p;
+            child->key = key;
+            p->child = child;
+            p = child;
+        }
+        else
+        {
+            p = p->child;
+            while (p->key != key && p->sibling != nullptr)
+            {
+                p = p->sibling;
+            }
+
+            if (p->key != key)
+            {
+                auto sibling = new_node();
+
+                sibling->parent = p->parent;
+                sibling->key = key;
+                p->sibling = sibling;
+                p = sibling;
+            }
+        }
+
+    }
+
+    node* create_child(node* parent, key_type key)
+    {
+        if (!parent)
+        {
+            assert(root == nullptr);
+            root = new_node();
+            root->key = key;
+            return root;
+        }
+        else
+        {
+            auto existing_child =  get_child(parent, key);
+            return existing_child ? existing_child : add_child(parent, key);
+        }
+    }
+
+    void foreach_node(auto&& func)
+    {
+    }
+
+    node* cursor = nullptr;
+    node* root = nullptr;
 };
 
 template <typename T, int N>
@@ -264,6 +443,11 @@ public:
     metric scope(T id)
     {
         return metric(id, *this);
+    }
+
+    metric operator ()(T id)
+    {
+        return scope(id);
     }
 
     report_t report()
