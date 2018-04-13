@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once 
 #include <limits>
+#include <cstring>
 #include "meta.h"
 
 namespace haisu

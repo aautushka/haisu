@@ -126,4 +126,16 @@ TEST_F(metric_trie_test, check_node_existence)
     EXPECT_TRUE(trie.has({1, 2}));
     EXPECT_TRUE(trie.has({1, 3}));
 }
-    
+
+TEST_F(metric_trie_test, timer_integration_test)
+{
+    haisu::metric::trie<int, haisu::metric::timer> trie;
+
+    trie.down(1).start();
+    trie.down(2).start();
+    trie.up();
+    trie.up();
+
+    EXPECT_TRUE(trie.has({1}));
+    EXPECT_TRUE(trie.has({1, 2}));
+}

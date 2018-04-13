@@ -218,6 +218,7 @@ public:
         {
             if (root)
             {
+                assert(key == root->key);
                 cursor = root;
             }
             else 
@@ -337,7 +338,7 @@ private:
                 p = sibling;
             }
         }
-
+        return p;
     }
 
     node* create_child(node* parent, key_type key)
