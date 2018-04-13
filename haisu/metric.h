@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once
 #include <map>
+#include <iostream>
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -162,6 +163,49 @@ private:
     usec_t _elapsed = 0;
 };
 
+class aggregate_timer
+{
+public:
+    using usec_t = unsigned long long;
+
+    void start()
+    {
+        _elapsed = now() - _elapsed;
+    }
+
+    usec_t stop()
+    {
+        ++_calls;
+        _elapsed = now() - _elapsed;
+        return elapsed();
+    }
+
+    usec_t elapsed()
+    {
+        return _elapsed;
+    }
+
+    static usec_t now()
+    {
+        // TODO: std::chrono? performance!
+        //      benchmark gettimeofday -- it's supposed to be fast and work in user-space
+        //      consider TSC
+        timeval time;
+        gettimeofday(&time, nullptr);
+        return usec(time);
+    }
+
+private:
+
+    static usec_t usec(timeval time)
+    {
+        return (usec_t)time.tv_sec * 1000 * 1000 + time.tv_usec;
+    }
+
+    usec_t _elapsed = 0;
+    unsigned long _calls = 0;
+};
+
 template <typename T, int N>
 class timer_stack
 {
@@ -197,7 +241,7 @@ public:
 
     ~trie()
     {
-        foreach_node([](auto n){ delete n; });
+        foreach_node(root, [](auto n){ delete n; });
     }
 
     value_type& up()
@@ -357,8 +401,22 @@ private:
         }
     }
 
-    void foreach_node(auto&& func)
+    void foreach_node(node* p, auto&& func)
     {
+        if (p)
+        {
+            if (p->child)
+            {
+                foreach_node(p->child, std::forward<decltype(func)>(func)); 
+            }
+
+            if (p->sibling)
+            {
+                foreach_node(p->sibling, std::forward<decltype(func)>(func));
+            }
+
+            func(p);
+        }
     }
 
     node* cursor = nullptr;
@@ -468,6 +526,98 @@ private:
     mono::overflow_stack<T, N> _path;
 };
 
+template <typename T>
+class monitor2
+{
+public:
+    class metric
+    {
+    public:
+        metric()
+        {
+        }
+
+        ~metric()
+        {
+            stop();
+        }
+
+        void stop()
+        {
+            if (_mon)
+            {
+                _mon->stop();
+            }
+            _mon = nullptr;
+        }
+
+        metric(const metric&) = delete;
+        metric& operator =(const metric&) = delete;
+
+
+        metric(metric&& other)
+        {
+            *this = std::move(other);
+        }
+
+        metric& operator =(metric&& other)
+        {
+            stop();
+            _mon = other._mon;
+
+            other._mon = nullptr;
+            return *this;
+        }
+
+    private:
+        metric(T id, monitor2& mon)
+            : _mon(&mon)
+        {
+            _mon->start(id);
+        }
+
+        monitor2* _mon = nullptr;
+
+        friend class monitor2;
+    };
+    
+    using report_t = tree<T, unsigned long long>;
+
+    void start(T id)
+    {
+        trie_.down(id).start();
+    }
+
+    void stop()
+    {
+        trie_.up().stop();
+    }
+
+    metric scope(T id)
+    {
+        return metric(id, *this);
+    }
+
+    metric operator ()(T id)
+    {
+        return scope(id);
+    }
+
+    report_t report()
+    {
+        /* return _table.query(); */
+        return report_t{};
+    }
+
+    std::string report_json()
+    {
+        auto data = report();
+        return haisu::to_json(report());
+    }
+    
+private:
+    trie<T, aggregate_timer> trie_;
+};
 
 } // namespace metrics
 
