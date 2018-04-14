@@ -316,6 +316,11 @@ public:
         return res->value;
     }
 
+    void foreach(auto&& func)
+    {
+        foreach_node(root, [&func](auto node) { func(node->key, node->value); });
+    }
+
 private:
     struct node 
     {
@@ -415,7 +420,7 @@ private:
                 foreach_node(p->sibling, std::forward<decltype(func)>(func));
             }
 
-            func(p);
+            std::forward<decltype(func)>(func)(p);
         }
     }
 
@@ -605,8 +610,13 @@ public:
 
     report_t report()
     {
-        /* return _table.query(); */
-        return report_t{};
+        report_t res;
+        trie_.foreach([&res](auto key, auto& val)
+        {
+            res[{key}] = val.elapsed();
+        });
+
+        return res;
     }
 
     std::string report_json()

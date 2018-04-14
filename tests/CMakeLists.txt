@@ -21,6 +21,7 @@ set(SRC
   tree_tests
   metric_table_tests
   metric_monitor_tests
+  metric_monitor2_tests
   mono_queue_tests
   mono_string_tests
   memrmem_tests
