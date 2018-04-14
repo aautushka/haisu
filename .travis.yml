@@ -9,7 +9,7 @@ addons:
       - g++-7
 
 script: 
-  - CXX=/usr/bin/g++-7 CC=/usr/bin/gcc-7 cmake -DBENCHMARK_ENABLE_TESTING=OFF.
+  - cmake -DBENCHMARK_ENABLE_TESTING=OFF -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 -DCMAKE_CC_COMPILER=/usr/bin/gcc-7 .
   - cmake --build tests
   - ./tests/tests
 
