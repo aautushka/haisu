@@ -260,6 +260,11 @@ public:
         size_ = 0;
     }
 
+    static T* at(T* t)
+    {
+        return t;
+    }
+
 private:
     using object = detail::pooled_object<T>;
     

@@ -42,8 +42,6 @@ class trie
 public:
     using key_type = K;
     using value_type = V;
-    using index_type = meta::memory_requirement_t<N>;
-    static const index_type nullidx = std::numeric_limits<index_type>::max();
 
     ~trie()
     {
@@ -141,18 +139,17 @@ public:
     }
 
 private:
-    struct node_base
+    struct node
     {
-        index_type parent;
-        index_type child;
-        index_type sibling;
+        node* parent;
+        node* child;
+        node* sibling;
         key_type key;
-    } __attribute__((packed));
-
-    struct node : node_base
-    {
         value_type value;
     };
+
+    using index_type = node*;
+    constexpr static index_type nullidx = nullptr;
 
     node& at(index_type idx)
     {
@@ -167,7 +164,7 @@ private:
 
     index_type new_node(key_type key, index_type parent = nullidx)
     {
-        const auto index = pool.alloc();
+        const auto index = pool.construct();
         auto& node = at(index);
         node.child = node.sibling = nullidx;
         node.parent = parent;
@@ -269,7 +266,7 @@ private:
 
     index_type cursor = nullidx;
     index_type root = nullidx;
-    haisu::index_pool<node, N> pool;
+    haisu::heap_pool<node> pool;
 };
 
 template <typename T>

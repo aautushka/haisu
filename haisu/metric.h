@@ -24,7 +24,6 @@ SOFTWARE.
 
 #pragma once
 #include <map>
-#include <iostream>
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -164,11 +163,6 @@ public:
     }
 
 private:
-    usec_t simulate()
-    {
-        return _elapsed + 1;
-    }
-
     static usec_t usec(timeval time)
     {
         return (usec_t)time.tv_sec * 1000 * 1000 + time.tv_usec;
@@ -197,12 +191,6 @@ public:
     usec_t elapsed()
     {
         return _elapsed;
-    }
-
-    usec_t sim()
-    {
-        ++_elapsed;
-        return _elapsed + 1;
     }
 
     static usec_t now()
