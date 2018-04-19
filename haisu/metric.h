@@ -248,7 +248,7 @@ public:
     {
         assert(cursor != nullptr);
         auto& prev = cursor->value;
-        cursor = cursor->parent;
+        cursor = cursor->get_parent();
         return prev;
     }
 
@@ -324,11 +324,41 @@ public:
 private:
     struct node 
     {
-        key_type key;
-        value_type value;
         node* parent;
         node* child;
         node* sibling;
+        key_type key;
+        value_type value;
+
+        node* get_parent() { return parent;} 
+        node* get_child() { return child; }
+        node* get_sibling() { return sibling; }
+        void share_parent(node* other) { parent = other->parent; }
+
+        node* find_child(key_type key)
+        {
+            auto child = get_child();
+            while (child && child->key != key)
+            {
+                child = child->get_sibling();
+            }
+
+            return child;
+        }
+
+        // finds a child or, if not present, its insertion place
+        // assumes there is at least one child
+        node* guess_child(key_type key)
+        {
+            auto child = get_child();
+            assert(child != null);
+            while (child->key != key && child->get_sibling() != nullptr)
+            {
+                child = child->get_sibling();
+            }
+
+            return child;
+        }
     };
 
     node* new_node()
@@ -340,13 +370,7 @@ private:
     {
         if (parent)
         {
-            auto child = parent->child;
-            while (child && child->key != key)
-            {
-                child = child->sibling;
-            }
-
-            return child;
+            return parent->find_child(key);
         }
         else
         {
@@ -361,31 +385,27 @@ private:
 
     node* add_child(node* p, key_type key)
     {
-        if (!p->child)
+        if (p->child)
+        {
+            p = p->guess_child(key);
+
+            if (p->key != key)
+            {
+                auto sibling = new_node();
+
+                sibling->share_parent(p);
+                sibling->key = key;
+                p->sibling = sibling;
+                p = sibling;
+            }
+        }
+        else
         {
             auto child = new_node();
             child->parent = p;
             child->key = key;
             p->child = child;
             p = child;
-        }
-        else
-        {
-            p = p->child;
-            while (p->key != key && p->sibling != nullptr)
-            {
-                p = p->sibling;
-            }
-
-            if (p->key != key)
-            {
-                auto sibling = new_node();
-
-                sibling->parent = p->parent;
-                sibling->key = key;
-                p->sibling = sibling;
-                p = sibling;
-            }
         }
         return p;
     }
@@ -410,15 +430,8 @@ private:
     {
         if (p)
         {
-            if (p->child)
-            {
-                foreach_node(p->child, std::forward<decltype(func)>(func)); 
-            }
-
-            if (p->sibling)
-            {
-                foreach_node(p->sibling, std::forward<decltype(func)>(func));
-            }
+            foreach_node(p->get_child(), std::forward<decltype(func)>(func)); 
+            foreach_node(p->get_sibling(), std::forward<decltype(func)>(func));
 
             std::forward<decltype(func)>(func)(p);
         }
