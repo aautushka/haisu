@@ -23,11 +23,11 @@ SOFTWARE.
 */
 
 #include <gtest/gtest.h>
-#include "haisu/metric.h"
+#include "haisu/metric2.h"
 
 struct metric_monitor2_test : ::testing::Test
 {
-    using mon_t = haisu::metric::monitor2<int>;
+    using mon_t = haisu::metric2::monitor<int>;
     mon_t mon;
 
     void busy_loop(int usec)

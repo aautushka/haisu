@@ -23,11 +23,11 @@ SOFTWARE.
 */
 
 #include <gtest/gtest.h>
-#include "haisu/metric.h"
+#include "haisu/metric2.h"
 
 struct metric_trie_test : ::testing::Test
 {
-    using trie_t = haisu::metric::trie<int, int>;
+    using trie_t = haisu::metric2::trie<int, int>;
     trie_t trie;
 };
 
@@ -129,7 +129,7 @@ TEST_F(metric_trie_test, check_node_existence)
 
 TEST_F(metric_trie_test, timer_integration_test)
 {
-    haisu::metric::trie<int, haisu::metric::timer> trie;
+    haisu::metric2::trie<int, haisu::metric::timer> trie;
 
     trie.down(1).start();
     trie.down(2).start();

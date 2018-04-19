@@ -1,5 +1,6 @@
 #include "benchmark/benchmark.h"
 #include "haisu/metric.h"
+#include "haisu/metric2.h"
 
 static void bench_original_metrics(benchmark::State& state) 
 {
@@ -28,8 +29,8 @@ static void bench_original_metrics(benchmark::State& state)
 
 static void bench_trie_metrics(benchmark::State& state) 
 {
-    namespace met = haisu::metric;
-    met::monitor2<int> mon;
+    namespace met = haisu::metric2;
+    met::monitor<int> mon;
     while (state.KeepRunning())
     {
         mon.start(1);
@@ -64,8 +65,8 @@ static void bench_original_metrics_shallow(benchmark::State& state)
 
 static void bench_trie_metrics_shallow(benchmark::State& state) 
 {
-    namespace met = haisu::metric;
-    met::monitor2<int> mon;
+    namespace met = haisu::metric2;
+    met::monitor<int> mon;
     while (state.KeepRunning())
     {
         mon.start(1);
@@ -93,8 +94,8 @@ static void bench_original_metrics_flat_hierarchy(benchmark::State& state)
 
 static void bench_trie_metrics_flat_hierarchy(benchmark::State& state) 
 {
-    namespace met = haisu::metric;
-    met::monitor2<int> mon;
+    namespace met = haisu::metric2;
+    met::monitor<int> mon;
     mon.start(1);
     while (state.KeepRunning())
     {
