@@ -153,7 +153,21 @@ public:
         return usec(time);
     }
 
+    static usec_t start(usec_t elapsed)
+    {
+        return now() - elapsed;
+    }
+
+    static usec_t stop(usec_t elapsed)
+    {
+        return now() - elapsed;
+    }
+
 private:
+    usec_t simulate()
+    {
+        return _elapsed + 1;
+    }
 
     static usec_t usec(timeval time)
     {
@@ -183,6 +197,12 @@ public:
     usec_t elapsed()
     {
         return _elapsed;
+    }
+
+    usec_t sim()
+    {
+        ++_elapsed;
+        return _elapsed + 1;
     }
 
     static usec_t now()

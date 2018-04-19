@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once
 #include <functional>
+#include "haisu/meta.h"
 
 namespace haisu
 {
@@ -346,6 +347,41 @@ private:
     uint16_t slab_size_ = 1;
     size_type capacity_{};
     size_type size_{};
+};
+
+// contiguous memory pool with indirect index-based addressing
+template <typename T, int N>
+class index_pool
+{
+public:
+    using index_t = meta::memory_requirement_t<N>;
+
+    index_t alloc()
+    {
+        const auto size = buf.size();
+        assert(size < N);
+        buf.push_back(T{});
+        return size;
+    }
+
+    T* at(index_t index)
+    {
+        assert(index < buf.size());
+        return &buf[index];
+    }
+
+    size_t size() const
+    {
+        return buf.size();
+    }
+
+    size_t capacity() const
+    {
+        return N;
+    }
+
+private:
+    std::vector<T> buf;
 };
     
 } // namespace haisu
