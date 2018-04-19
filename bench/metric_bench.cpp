@@ -51,5 +51,30 @@ static void bench_trie_metrics(benchmark::State& state)
     }
 }
 
+static void bench_original_metrics_shallow(benchmark::State& state) 
+{
+    using namespace haisu::metric;
+    monitor<int, 16> mon;
+    while (state.KeepRunning())
+    {
+        mon.start(1);
+        mon.stop();
+    }
+}
+
+static void bench_trie_metrics_shallow(benchmark::State& state) 
+{
+    namespace met = haisu::metric;
+    met::monitor2<int> mon;
+    while (state.KeepRunning())
+    {
+        mon.start(1);
+        mon.stop();
+    }
+}
+
+
 BENCHMARK(bench_original_metrics);
 BENCHMARK(bench_trie_metrics);
+BENCHMARK(bench_original_metrics_shallow);
+BENCHMARK(bench_trie_metrics_shallow);
