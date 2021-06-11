@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <array>
 #include "meta.h"
 
 namespace haisu

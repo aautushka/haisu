@@ -59,7 +59,8 @@ public:
         return res;
     }
 
-    void up(auto&& value_func)
+    template <typename T>
+    void up(T&& value_func)
     {
         assert(cursor != nullidx);
         at(cursor).value = value_func(at(cursor).value);
@@ -88,7 +89,8 @@ public:
         return at(cursor).value;
     }
 
-    void down(key_type key, auto&& value_func)
+    template <typename T>
+    void down(key_type key, T&& value_func)
     {
         down(key);
         at(cursor).value = value_func(at(cursor).value);
@@ -136,7 +138,8 @@ public:
         return at(res).value;
     }
 
-    void foreach(auto&& func)
+    template <typename T>
+    void foreach(T&& func)
     {
         foreach_node(root, [&func, this](auto node) { func(at(node).key, at(node).value); });
     }
@@ -230,7 +233,8 @@ private:
         }
     }
 
-    void foreach_node(index_type p, auto&& func)
+    template <typename T>
+    void foreach_node(index_type p, T&& func)
     {
         if (p != nullidx)
         {

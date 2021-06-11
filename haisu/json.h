@@ -25,10 +25,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 For more information, please refer to <http://unlicense.org/>
 */
 
-
 #pragma once
 #include <cstring>
-#include <experimental/string_view>
+#include <string_view>
+#include <array>
 
 #include "haisu/meta.h"
 #include "haisu/mono_stack.h"
@@ -500,7 +500,7 @@ enum class error_code
     unspecified_error
 };
 
-using string_view = std::experimental::string_view;
+using string_view = std::string_view;
 
 struct string_literal
 {
@@ -544,7 +544,7 @@ template <typename T, int MaxDepth = 64>
 class parser
 {
     static_assert(MaxDepth > 0, "MaxDepth is not allowed to be zero");
-    enum parser_state
+    enum parser_state : int8_t
     {
         state_object_key,
         state_object_value,
@@ -559,7 +559,7 @@ public:
         parser_state state = state_bad;
         stack_.clear();
         feed_ = json_string;
-        stack_.template push(state_bad);
+        stack_.push(static_cast<int8_t>(state_bad));
 
         auto& s = feed_;
 

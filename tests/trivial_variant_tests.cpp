@@ -23,7 +23,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 #include <gtest/gtest.h>
-#include <experimental/string_view>
+#include <string_view>
 #include "haisu/trivial_variant.h"
 
 struct trivial_variant_test : ::testing::Test
@@ -71,8 +71,8 @@ TEST_F(trivial_variant_test, asssignes_another_value_with_assignment_operator)
 
 TEST_F(trivial_variant_test, assignes_string_view)
 {
-    haisu::trivial_variant<int, std::experimental::string_view> v;
-    v = std::experimental::string_view("hello world");
+    haisu::trivial_variant<int, std::string_view> v;
+    v = std::string_view("hello world");
 
-    EXPECT_EQ("hello world", v.get<std::experimental::string_view>());
+    EXPECT_EQ("hello world", v.get<std::string_view>());
 }

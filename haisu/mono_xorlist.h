@@ -27,6 +27,7 @@ For more information, please refer to <http://unlicense.org/>
 
 #pragma once
 
+#include <array>
 #include "meta.h"
 
 namespace haisu
