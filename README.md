@@ -8,4 +8,4 @@ I habitually use Debian, Arch Linux and MacOS for my coding. HAISU would probabl
 
 ## License
 
-Distributed under the MIT license. Copyright (c) 2017, Anton Autushka
+Distributed under UNLICENSE http://unlicense.org/
