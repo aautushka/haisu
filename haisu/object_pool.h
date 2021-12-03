@@ -321,7 +321,8 @@ private:
     {
         if (tail_)
         {
-            tail_->next  = s;
+            assert(!tail_->next);
+            tail_ = tail_->next  = s;
         }
         else
         {
