@@ -28,7 +28,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 struct heap_pool_test : ::testing::Test
 {
-    haisu::heap_pool<int> pool;
+    using pool_t = haisu::heap_pool<int>;
+    pool_t pool;
+
+    void alloc_many(int n) {
+        for (int i = 0; i < n; ++i) {
+            pool.alloc();
+        }
+    }
 };
 
 TEST_F(heap_pool_test, allocates_from_pool)
@@ -40,6 +47,14 @@ TEST_F(heap_pool_test, allocates_same_object_once_freed)
 {
     auto p1 = pool.alloc();
     pool.dealloc(p1);
+    auto p2 = pool.alloc();
+    EXPECT_EQ(p1, p2);
+}
+
+TEST_F(heap_pool_test, allocates_same_object_if_freed_all)
+{
+    auto p1 = pool.alloc();
+    pool.dealloc_all();
     auto p2 = pool.alloc();
     EXPECT_EQ(p1, p2);
 }
@@ -101,12 +116,16 @@ TEST_F(heap_pool_test, deallocs_all_objects_without_calling_the_descructors)
     EXPECT_EQ(0, pool.size());
 }
 
+TEST_F(heap_pool_test, keeps_memory_after_deallocation) {
+    alloc_many(10);
+    auto prev_capacity = pool.capacity();
+    pool.dealloc_all();
+    EXPECT_EQ(prev_capacity, pool.capacity());
+}
+
 TEST_F(heap_pool_test, reuses_deallocated_memory)
 {
-    for (int i = 0; i < 2; ++i)
-    {
-        pool.alloc();
-    }
+    alloc_many(100);
     pool.dealloc_all();
 
     auto prev_capacity = pool.capacity();
@@ -115,5 +134,11 @@ TEST_F(heap_pool_test, reuses_deallocated_memory)
         pool.alloc();
         EXPECT_EQ(prev_capacity, pool.capacity());
     }
+}
+
+TEST_F(heap_pool_test, moves_object) {
+    alloc_many(10);
+    pool_t other(std::move(pool));
+    pool = std::move(other);
 }
 

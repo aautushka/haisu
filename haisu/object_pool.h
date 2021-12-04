@@ -183,9 +183,24 @@ class heap_pool final
 public:
     using size_type = std::size_t;
 
-    heap_pool() = default; 
-    heap_pool(heap_pool&&) = default;
-    heap_pool& operator =(heap_pool&&) = default;
+    heap_pool() {
+        set_defaults();
+    }
+
+    heap_pool(const heap_pool&) = delete;
+    heap_pool& operator =(const heap_pool&) = delete;
+
+
+    heap_pool(heap_pool&& other) {
+        copy_state_from(other);
+        other.set_defaults();
+    }
+
+    heap_pool& operator =(heap_pool&& other) {
+        copy_state_from(other);
+        other.set_defaults();
+        return *this;
+    }
 
     ~heap_pool() noexcept
     {
@@ -228,26 +243,25 @@ public:
         return o;
     }
 
-
     void destroy(T* t)
     {
         t->~T();
         dealloc(t);
     }
 
-    heap_pool(const heap_pool&) = delete;
-    heap_pool& operator =(const heap_pool&) = delete;
-
+    // total number of objects, both allocated and in the free list
     size_type capacity() const noexcept
     {
         return capacity_;
     }
 
+    // total number of allocated objects 
     size_type size() const noexcept
     {
         return size_;
     }
 
+    //  moves objects to the free list
     void dealloc_all() noexcept
     {
         auto s = head_;
@@ -259,7 +273,7 @@ public:
             flist = f.first;
             s = s->next;
         }
-        flist_ = flist;
+        flist_ = flist; // it's okay, deallocating all, trump the old flist
         size_ = 0;
     }
 
@@ -278,6 +292,16 @@ private:
         object data[1];
     };
 
+    static size_type list_length(const object* o) { 
+        auto res = size_type{};
+        auto s = o;
+        while (s) {
+            res += 1;
+            s = s->next;
+        }
+
+        return res;
+    }
 
     T* remove_free_list_head() noexcept
     {
@@ -335,6 +359,7 @@ private:
         slab_size_ = current_size > 4 * 1024 ? slab_size_ : slab_size_ * 2;
     }
 
+    // builds linked list, a pair containing first and last nodes
     static std::pair<object*, object*> create_free_list(slab* s)
     {
         auto flist = s->data;
@@ -350,12 +375,29 @@ private:
         return {flist, prev};
     }
 
-    slab* head_ = nullptr;
-    slab* tail_ = nullptr;
-    object* flist_ = nullptr;
-    uint16_t slab_size_ = 1;
-    size_type capacity_{};
-    size_type size_{};
+    void copy_state_from(const heap_pool& other) {
+        head_ = other.head_;
+        tail_ = other.tail_;
+        flist_ = other.flist_;
+        slab_size_ = other.slab_size_;
+        capacity_ = other.capacity_;
+        size_ = other.size_;
+    }
+
+    void set_defaults() {
+        head_ = tail_ = nullptr;
+        flist_ = nullptr;
+        slab_size_ = 1;
+        capacity_ = {};
+        size_ = {};
+    }
+
+    slab* head_;
+    slab* tail_;
+    object* flist_;
+    uint16_t slab_size_;
+    size_type capacity_;
+    size_type size_;
 };
 
 // contiguous memory pool with indirect index-based addressing
