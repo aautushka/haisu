@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 // clang-format off
 
 #include <gtest/gtest.h>
+#include <list>
 
 #include "haisu/json.h"
 #include "haisu/tree.h"
@@ -489,4 +490,156 @@ TEST_F(json_test, collect_keys) {
 
     auto keys = parse(R"({"a":0,"b":"0","c":[{"d":1, "e":{"f":2,"g":3},"h":4}, "i"], "j":5})");
     EXPECT_EQ("abcdefghj", keys);
+}
+
+#include "data/large-file.json"
+TEST_F(json_test, rebuild_json) {
+    using namespace haisu::json;
+
+    struct parser: haisu::json::parser<parser> 
+    {
+        void on_key(string_literal key) {
+            comma();
+            out.append(1, '"');
+            out.append(key.view);
+            out.append(1, '"');
+            out.append(1, ':');
+        }
+
+        void on_value(string_literal lit)
+        {
+            out.append(1, '"');
+            out.append(lit.view);
+            out.append(1, '"');
+        }
+
+        void on_value(bool_literal lit)
+        {
+            out.append(lit.value ? "true" : "false");
+        }
+
+        void on_value(numeric_literal lit)
+        {
+            out.append(lit.view);
+        }
+
+        void on_value(null_literal lit)
+        {
+            out.append("null");
+        }
+
+
+        void on_array(string_literal lit)
+        {
+            comma();
+            out.append(1, '"');
+            out.append(lit.view);
+            out.append(1, '"');
+        }
+
+        void on_array(bool_literal lit)
+        {
+            comma();
+            out.append(lit.value ? "true": "false");
+        }
+
+        void on_array(null_literal lit)
+        {
+            comma();
+            out.append("null");
+        }
+
+        void on_array(numeric_literal lit)
+        {
+            comma();
+            out.append(lit.view);
+        }
+
+        void on_new_array() {
+            if (!array_stack.empty() && array_stack.back()) {
+                comma();
+            }
+            comma_stack.push_back(false);
+            array_stack.push_back(true);
+            out.append(1, '[');
+        }
+
+        void on_array_end() {
+            comma_stack.pop_back();
+            array_stack.pop_back();
+            out.append(1, ']');
+        }
+
+        void on_new_object()
+        {
+            if (!array_stack.empty() && array_stack.back()) {
+                comma();
+            }
+            comma_stack.push_back(false);
+            array_stack.push_back(false);
+            out.append(1, '{');
+        }
+
+        void on_object_end()
+        {
+            comma_stack.pop_back();
+            array_stack.pop_back();
+            out.append(1, '}');
+        }
+
+        void comma() {
+            if (!comma_stack.empty()) {
+                if (comma_stack.back()) {
+                    out.append(1, ',');
+                } else {
+                    comma_stack.back() = true;
+                }
+            }
+        }
+
+        std::string operator()(const char* str) {
+            out = {};
+
+            parse(str);
+
+            return std::move(out);
+        }
+
+        std::list<bool> comma_stack;
+        std::list<bool> array_stack;
+        std::string out;
+    };
+
+    parser parse;
+
+    const auto test = [&](const char* str) {
+        ASSERT_EQ(str, parse(str));
+    };
+
+    test("[]");
+    test("{}");
+    test(R"({"a":"b"})");
+    test(R"({"a":true})");
+    test(R"({"a":false})");
+    test(R"({"a":null})");
+    test(R"({"a":0})");
+    test(R"({"a":[]})");
+    test(R"({"a":{}})");
+    test(R"({"a":[[[]]]})");
+    test(R"(["a"])");
+    test(R"([true])");
+    test(R"([false])");
+    test(R"([0])");
+    test(R"([null])");
+
+    test("[0,1]");
+    test("[null,null]");
+    test("[true,true]");
+    test("[\"0\",\"1\"]");
+    test(R"({"a":0,"b":1})");
+    test("[[],[]]");
+    test("[{},{}]");
+
+    auto out = parse(TEST_JSON);
+    ASSERT_TRUE(out == TEST_JSON);
 }

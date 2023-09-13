@@ -750,7 +750,7 @@ public:
                                 break;
                                                 
                         }
-                        s += 4;
+                        s += 3;
                         break;
                     }
                     else if constexpr (has_error_handler())// malformed literal
@@ -793,7 +793,7 @@ public:
                             default:
                                 break;
                         }
-                        s += 5;
+                        s += 4;
                         break;
                     }
                     else if constexpr (has_error_handler()) // malformed literal
