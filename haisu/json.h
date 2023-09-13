@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 For more information, please refer to <http://unlicense.org/>
 */
 
+// clang-format off
 #pragma once
 #include <cstring>
 #include <string_view>
@@ -557,50 +558,102 @@ public:
     void parse(const char* json_string)
     {
         parser_state state = state_bad;
+
+        const auto transit = [&](auto new_state) {
+            state = new_state;
+            stack_.push(static_cast<int8_t>(new_state));
+        };
+
+        const auto transform = [&](auto new_state) {
+            state = new_state;
+            stack_.top() = static_cast<int8_t>(new_state);
+        };
+
+        const auto restore_previous_state = [&] {
+            stack_.pop();
+            state = static_cast<parser_state>(stack_.top());
+        };
+
         stack_.clear();
         feed_ = json_string;
-        stack_.push(static_cast<int8_t>(state_bad));
+        transit(state_bad);
 
         auto& s = feed_;
+
+#ifdef DEBUG_JSON_PARSER
+        const auto state_str = [](auto state) {
+            switch (state) {
+                case state_bad:
+                    return "bad";
+                case state_object_key:
+                    return "key";
+                case state_array_item:
+                    return "arr";
+                case state_object_value:
+                    return "val";
+            }
+        };
+#endif
 
         do
         {
             s = skip_blanks(s);
+
+#ifdef DEBUG_JSON_PARSER
+            auto prev_state = state;
+            auto ch = s[0];
+#endif
             
             switch (*s)
             {
                 case '{': // new object
-                    if constexpr (has_error_handler())
-                    {
-                        if (stack_.full())
-                        {
-                            return call_on_error({s, error_code::json_too_deep_to_parse});
-                        }
-                    }
+                    switch (state) {
+                        case state_object_value:
+                            transform(state_object_key);
+                            break;
+                        case state_bad:
+                        case state_array_item:
 
-                    stack_.template push<state_object_key>();
-                    state = state_object_key;
+                            if constexpr (has_error_handler())
+                            {
+                                if (stack_.full())
+                                {
+                                    return call_on_error({s, error_code::json_too_deep_to_parse});
+                                }
+                            }
+                            transit(state_object_key);
+                            break;
+                        default:
+                            break;
+                    }
                     call_on_new_object();
                     break;
                 case '[': // new array
-                    if constexpr (has_error_handler())
-                    {
-                        if (stack_.full())
-                        {
-                            return call_on_error({s, error_code::json_too_deep_to_parse});
-                        }
+                    switch (state) {
+                        case state_object_value:
+                            transform(state_array_item);
+                            break;
+                        case state_array_item:
+                        case state_bad:
+                            if constexpr (has_error_handler())
+                            {
+                                if (stack_.full())
+                                {
+                                    return call_on_error({s, error_code::json_too_deep_to_parse});
+                                }
+                            }
+                            transit(state_array_item);
+                            break;
+                        default:
+                            break;
                     }
-
-                    stack_.template push<state_array_item>();
-                    state = state_array_item;
                     call_on_new_array();
                     break;
                 case '}': // object end
                     if constexpr (!has_error_handler()) // assume no errors possible
                     {
                         call_on_object_end();
-                        stack_.pop();
-                        state = static_cast<parser_state>(stack_.top());
+                        restore_previous_state();
                         break;
                     }
                     else
@@ -608,8 +661,7 @@ public:
                         if (stack_.size() >= 2)
                         {
                             call_on_object_end();
-                            stack_.pop();
-                            state = static_cast<parser_state>(stack_.top());
+                            restore_previous_state();
                             break;
                         }
                         else
@@ -621,8 +673,7 @@ public:
                     if constexpr (!has_error_handler()) // assume no errors possible
                     {
                         call_on_array_end();
-                        state = static_cast<parser_state>(stack_.top());
-                        stack_.pop();
+                        restore_previous_state();
                         break;
                     }
                     else
@@ -630,8 +681,7 @@ public:
                         if (stack_.size() >= 2)
                         {
                             call_on_array_end();
-                            state = static_cast<parser_state>(stack_.top());
-                            stack_.pop();
+                            restore_previous_state();
                             break;
                         }
                         else
@@ -648,10 +698,8 @@ public:
                         }
                     }
 
-                    state = static_cast<parser_state>(stack_.top());
                     break;
                 case ':':
-                    state = state_object_value;
                     break;
                 case '\'': // object key, or array item
                 case '"': // object key, or array item
@@ -663,12 +711,25 @@ public:
                         {
                             case state_object_key:
                                 call_on_key(k, s);
+
+                                if constexpr (has_error_handler())
+                                {
+                                    if (stack_.full())
+                                    {
+                                        return call_on_error({s, error_code::json_too_deep_to_parse});
+                                    }
+                                }
+
+                                transit(state_object_value);
                                 break;
                             case state_object_value:
                                 call_on_value(k, s);
+                                restore_previous_state();
                                 break;
                             case state_array_item:
                                 call_on_array(k, s);
+                                break;
+                            default:
                                 break;
                         }
                     }
@@ -678,8 +739,16 @@ public:
                     {
                         switch (state)
                         {
-                            case state_object_value: call_on_null_value(); break;
-                            case state_array_item: call_on_null_array(); break;
+                            case state_object_value: 
+                                call_on_null_value(); 
+                                restore_previous_state();
+                                break;
+                            case state_array_item: 
+                                call_on_null_array(); 
+                                break;
+                            default:
+                                break;
+                                                
                         }
                         s += 4;
                         break;
@@ -693,8 +762,15 @@ public:
                     {
                         switch (state)
                         {
-                            case state_object_value: call_on_bool_value<true>(); break;
-                            case state_array_item: call_on_bool_array<true>(); break;
+                            case state_object_value: 
+                                call_on_bool_value<true>(); 
+                                restore_previous_state();
+                                break;
+                            case state_array_item: 
+                                call_on_bool_array<true>(); 
+                                break;
+                            default:
+                                break;
                         }
                         s += 3;
                         break;
@@ -708,8 +784,14 @@ public:
                     {
                         switch (state)
                         {
-                            case state_object_value: call_on_bool_value<false>(); break;
-                            case state_array_item: call_on_bool_array<false>(); break;
+                            case state_object_value: 
+                                call_on_bool_value<false>(); 
+                                restore_previous_state();
+                                break;
+                            case state_array_item: 
+                                call_on_bool_array<false>(); break;
+                            default:
+                                break;
                         }
                         s += 5;
                         break;
@@ -758,11 +840,15 @@ public:
 //
                             case state_object_value:
                                 call_on_value(literal);
+                                restore_previous_state();
                                 break;
                             case state_array_item:
                                 call_on_array(literal);
                                 break;
+                            default:
+                                break;
                         }
+                        s -= 1;
                     }
 
                     break;
@@ -772,6 +858,11 @@ public:
                         return call_on_error(s);
                     }
             }
+
+#ifdef DEBUG_JSON_PARSER
+            std::cout << ch << " : " << state_str(prev_state) << " --> " << state_str(state) << " : " << (int)stack_.size()  << std::endl;
+#endif
+
             ++s;
         }
         while (*s);
@@ -956,4 +1047,3 @@ private:
 
 } // namespace json
 } // namespace haisu
-

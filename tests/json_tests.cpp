@@ -22,6 +22,9 @@ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
+
+// clang-format off
+
 #include <gtest/gtest.h>
 
 #include "haisu/json.h"
@@ -410,4 +413,80 @@ TEST_F(json_test, parses_numeric_literal_in_array)
 {
     arr.parse("[123456]");
     EXPECT_EQ("123456", arr[0]);
+}
+
+TEST_F(json_test, collect_keys) {
+    struct parser: haisu::json::parser<parser> 
+    {
+        void on_key(haisu::json::string_literal key) {
+            keys.append(key.view);
+        }
+
+        std::string operator()(const char* str) {
+            keys = {};
+            parse(str);
+            return std::move(keys);
+        }
+
+        std::string keys;
+    };
+
+    parser parse;
+
+    // key - key,val - key - key,val - key - bad
+    EXPECT_EQ("ab", parse(R"({"a":0,"b":1})"));
+    EXPECT_EQ("ab", parse(R"({"a":"0","b":"1"})"));
+    EXPECT_EQ("ab", parse(R"({"a":null,"b":null})"));
+    EXPECT_EQ("ab", parse(R"({"a":true,"b":true})"));
+    EXPECT_EQ("ab", parse(R"({"a":false,"b":false})"));
+    EXPECT_EQ("ab", parse(R"({"a":{},"b":{}})"));
+    EXPECT_EQ("ab", parse(R"({"a":[],"b":[]})"));
+    EXPECT_EQ("ab", parse(R"({"a":[[]],"b":[[]]})"));
+    EXPECT_EQ("ab", parse(R"({"a":[[[]]],"b":[[[]]]})"));
+
+    // key - key,key - key,key,val - key, key - key -
+    EXPECT_EQ("ab", parse(R"({"a": {"b": 0}})"));
+    EXPECT_EQ("ab", parse(R"({"a": {"b": "0"}})"));
+    EXPECT_EQ("ab", parse(R"({"a": {"b": false}})"));
+    EXPECT_EQ("ab", parse(R"({"a": {"b": true}})"));
+    EXPECT_EQ("ab", parse(R"({"a": {"b": null}})"));
+    EXPECT_EQ("ab", parse(R"({"a": {"b": {}}})"));
+    EXPECT_EQ("ab", parse(R"({"a": {"b": []}})"));
+
+    EXPECT_EQ("ac", parse(R"({"a": {}, "c": 1})"));
+    EXPECT_EQ("ac", parse(R"({"a": {}, "c": "0"})"));
+    EXPECT_EQ("ac", parse(R"({"a": {}, "c": false})"));
+    EXPECT_EQ("ac", parse(R"({"a": {}, "c": true})"));
+    EXPECT_EQ("ac", parse(R"({"a": {}, "c": []})"));
+    EXPECT_EQ("ac", parse(R"({"a": {}, "c": {}})"));
+
+    EXPECT_EQ("abc", parse(R"({"a": {"b": 0}, "c": 1})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": null}, "c": null})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": "0"}, "c": "1"})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": true}, "c": true})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": false}, "c": false})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": {}}, "c": true})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": {}}, "c": false})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": []}, "c": true})"));
+    EXPECT_EQ("abc", parse(R"({"a": {"b": []}, "c": false})"));
+
+    EXPECT_EQ("", parse(R"(["a", "b"])"));
+    EXPECT_EQ("", parse(R"(["a", ["b"]])"));
+    EXPECT_EQ("", parse(R"([["b"], "c"])"));
+    EXPECT_EQ("", parse(R"([{}, {}])"));
+    EXPECT_EQ("ab", parse(R"([{"a": 0}, {"b": 1}])"));
+    EXPECT_EQ("ab", parse(R"([[{"a": 0}], [{"b": 1}]])"));
+
+    EXPECT_EQ("ab", parse(R"([{"a":0,"b":1}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":"0","b":"1"}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":null,"b":null}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":true,"b":true}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":false,"b":false}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":{},"b":{}}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":[],"b":[]}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":[[]],"b":[[]]}])"));
+    EXPECT_EQ("ab", parse(R"([{"a":[[[]]],"b":[[[]]]}])"));
+
+    auto keys = parse(R"({"a":0,"b":"0","c":[{"d":1, "e":{"f":2,"g":3},"h":4}, "i"], "j":5})");
+    EXPECT_EQ("abcdefghj", keys);
 }
