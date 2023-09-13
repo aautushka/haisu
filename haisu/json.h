@@ -324,9 +324,21 @@ public:
         push_flag(tag());
     }
 
+    void push(bool flag) {
+        if (flag) {
+            push<true>();
+        } else {
+            push<false>();
+        }
+    }
+
     constexpr int capacity() const
     {
         return 63;
+    }
+
+    bool empty() const {
+        return mask_ == 1;
     }
 
 private:
@@ -541,7 +553,7 @@ struct error
 //     9) same for unicode, let the derivee handle this
 //     10) the main focus of this parser is performance, it should be easily customizable when performance is at stake
 //        and some features may be left out (if I don't want doubles, why bother parsing them anyway?)
-template <typename T, int MaxDepth = 64>
+template <typename T, int MaxDepth = 63>
 class parser
 {
     static_assert(MaxDepth > 0, "MaxDepth is not allowed to be zero");
@@ -554,6 +566,8 @@ class parser
     };
 
 public:
+    using stack_t = static_stack<int8_t, MaxDepth + 1>; // one element on the stack is reserved
+
     // the input string must be null-terminated
     void parse(const char* json_string)
     {
@@ -1041,7 +1055,7 @@ private:
     template <typename U, typename Error> static void call_error(U&, Error&&, long) {}
 
 
-    static_stack<int8_t, MaxDepth + 1> stack_; // one element on the stack is reserved
+    stack_t stack_; // one element on the stack is reserved
     const char* feed_;
 };
 
