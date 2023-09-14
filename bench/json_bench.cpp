@@ -1,8 +1,11 @@
+// clang-format off
 #include "benchmark/benchmark.h"
 #include "haisu/json.h"
 #include "haisu/json_model.h"
 #include "gason.h"
 #include "js0n/js0n.h"
+#include "js0n/js0n.c"
+#include "tests/data/large-file.json"
 
 std::string nested_json = "{\"a\" : { \"b\" : { \"c\" : { \"d\" : { \"e\" : { \"f\" : \"g\"} } } } } }";
 std::string flat_json = "{\"a\" : \"b\", \"c\" : \"d\", \"e\" : \"f\", \"g\" : \"h\", \"i\" : \"j\", \"k\" : \"l\", \"m\" : \"n\"}";
@@ -153,3 +156,7 @@ BENCHMARK_CAPTURE(bench_js0n, js0n_array_of_objects, array_of_objects);
 BENCHMARK_CAPTURE(bench_gason, gason_literals, literals);
 BENCHMARK_CAPTURE(bench_haisu, haisu_literals, literals);
 BENCHMARK_CAPTURE(bench_js0n, js0n_literals, literals);
+
+BENCHMARK_CAPTURE(bench_gason, gason_large_file, TEST_JSON);
+BENCHMARK_CAPTURE(bench_haisu, haisu_large_file, TEST_JSON);
+BENCHMARK_CAPTURE(bench_js0n, js0n_large_file, TEST_JSON);

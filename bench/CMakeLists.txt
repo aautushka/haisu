@@ -7,10 +7,10 @@ set(SRC
   # zset_bench
   # partition_bench
   # mono_hash_bench
-  metric_bench
-  # json_bench
-  js0n/js0n.h
-  js0n/js0n.c
+  # metric_bench
+  json_bench
+  # js0n/js0n.h
+  # js0n/js0n.c
 ) 
 
 add_executable(bench ${SRC})

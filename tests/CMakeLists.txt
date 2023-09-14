@@ -1,7 +1,10 @@
 project(tests CXX)
 
+add_compile_options(-fno-omit-frame-pointer -fsanitize=address -fno-sanitize-recover=all)
+add_link_options(-fsanitize=address)
+
 enable_testing()
-#find_package(GTest REQUIRED)
+find_package(GTest REQUIRED)
 include_directories (..)
 
 set(SRC 
@@ -44,4 +47,4 @@ set(SRC
 
 add_executable(tests ${SRC})
 
-target_link_libraries(tests gtest pthread)
+target_link_libraries(tests GTest::gtest GTest::gtest_main  pthread)

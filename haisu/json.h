@@ -611,8 +611,6 @@ public:
 
         do
         {
-            s = skip_blanks(s);
-
 #ifdef DEBUG_JSON_PARSER
             auto prev_state = state;
             auto ch = s[0];
@@ -620,6 +618,11 @@ public:
             
             switch (*s)
             {
+                case ' ':
+                case '\r':
+                case '\n':
+                case '\t':
+                    break;
                 case '{': // new object
                     switch (state) {
                         case state_object_value:
@@ -720,7 +723,7 @@ public:
                     {
                         const auto quote = *s;
                         const auto k = ++s;
-                        s = skip_to_end_of_string(quote, s);
+                        s = skip_to_end_of_string(quote, k);
                         switch (state)
                         {
                             case state_object_key:
@@ -745,6 +748,9 @@ public:
                                 break;
                             default:
                                 break;
+                        }
+                        if (!*s) {
+                            goto stop_parsing;
                         }
                     }
                     break;
@@ -862,7 +868,7 @@ public:
                             default:
                                 break;
                         }
-                        s -= 1;
+                        --s;
                     }
 
                     break;
@@ -877,10 +883,10 @@ public:
             std::cout << ch << " : " << state_str(prev_state) << " --> " << state_str(state) << " : " << (int)stack_.size()  << std::endl;
 #endif
 
-            ++s;
         }
-        while (*s);
+        while (*++s);
 
+stop_parsing:
         if constexpr (has_error_handler())
         {
             if (stack_.size() != 1 || stack_.top() != state_bad)

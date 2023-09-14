@@ -133,7 +133,7 @@ private:
     std::vector<std::string> _arr;
 };
 
-struct error_counter : public haisu::json::parser<error_counter>
+struct error_counter : public haisu::json::parser<error_counter, 3>
 {
     void on_error(haisu::json::error err)
     {
@@ -193,6 +193,11 @@ TEST_F(json_test, ignores_blanks_when_parsing)
 {
     json.parse(" { \"a\" : \"b\" } ");
     EXPECT_EQ("b", json["a"]);
+}
+
+TEST_F(json_test, asan_blanks)
+{
+    json.parse(" ");
 }
 
 TEST_F(json_test, parses_array_of_single_item)
@@ -365,6 +370,53 @@ TEST_F(json_test, invalid_number_literal)
 TEST_F(json_test, incomplete_string_literal_error)
 {
     err.parse("['hello");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, incomplete_number)
+{
+    err.parse("['hello");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, incomplete_literal)
+{
+    err.parse("[tru");
+    EXPECT_TRUE(err.has_errors());
+
+    err = {};
+    err.parse("[fals");
+    EXPECT_TRUE(err.has_errors());
+
+    err = {};
+    err.parse("[nul");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, array_is_too_deep_to_parse)
+{
+    err.parse("[[[]]]");
+    EXPECT_FALSE(err.has_errors());
+
+    err.parse("[[[[]]]]");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, object_is_too_deep_to_parse)
+{
+    err.parse("{\"a\":{\"b\":{}}}");
+    EXPECT_FALSE(err.has_errors());
+
+    err.parse("{\"a\":{\"b\":{\"c\":{}}}}");
+    EXPECT_TRUE(err.has_errors());
+}
+
+TEST_F(json_test, object_array_mix_is_too_deep_to_parse)
+{
+    err.parse("[{\"a\":[]}]");
+    EXPECT_FALSE(err.has_errors());
+
+    err.parse("[{\"a\":[{\"b\":0}]}]");
     EXPECT_TRUE(err.has_errors());
 }
 
