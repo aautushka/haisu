@@ -6,15 +6,17 @@
 #include "js0n/js0n.h"
 #include "js0n/js0n.c"
 #include "tests/data/large-file.json"
+#include "simdjson/include/simdjson.h"
 
 std::string nested_json = "{\"a\" : { \"b\" : { \"c\" : { \"d\" : { \"e\" : { \"f\" : \"g\"} } } } } }";
 std::string flat_json = "{\"a\" : \"b\", \"c\" : \"d\", \"e\" : \"f\", \"g\" : \"h\", \"i\" : \"j\", \"k\" : \"l\", \"m\" : \"n\"}";
 std::string flat_array = "[\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\", \"h\", \"i\", \"j\", \"k\"]";
-std::string long_names = "{\"aaaaaaaaaaaaaaaaa\" : { \"bbbbbbbbbbbbb\" : { \"cccccccccccccccc\" : { \"ddddddddddddddddd\"}}}}";
+/* std::string long_names = "{\"aaaaaaaaaaaaaaaaa\" : { \"bbbbbbbbbbbbb\" : { \"cccccccccccccccc\" : { \"ddddddddddddddddd\"}}}}"; */
+std::string long_names = "{\"aaaaaaaaaaaaaaaaa\" : { \"bbbbbbbbbbbbb\" : { \"cccccccccccccccc\" : { \"ddddddddddddddddd\": 0}}}}";
 std::string empty_json = "{}";
 std::string deep_json = "{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"j\":{\"h\":{\"i\":{\"j\":{\"k\":{\"l\":{\"m\":{\"n\":{\"o\":{\"p\":{\"q\":{\"r\":\"s\"}}}}}}}}}}}}}}}}}}";
 std::string array_of_arrays = "[[\"a\"], [\"b\"], [\"c\"], [\"d\"],[\"e\"],[\"f\"],[\"g\"],[\"h\"]]";
-std::string array_of_objects = "[{\"a\":\"b\"},{\"c\":\"d\"},{\"e\":\"f\"},{\"g\":\"h\"},{\"i\",\"j\"},{\"k\":\"l\"},{\"m\":\"n\"}]";
+std::string array_of_objects = "[{\"a\":\"b\"},{\"c\":\"d\"},{\"e\":\"f\"},{\"g\":\"h\"},{\"i\":\"j\"},{\"k\":\"l\"},{\"m\":\"n\"}]";
 std::string literals = "[true, false, true, null, null, true, false, null, true, false, null, true, false, null]";
 
 class gason_parser
@@ -121,42 +123,82 @@ static void bench_js0n(benchmark::State& state, std::string json)
     }
 }
 
+void traverse(simdjson::ondemand::value element) {
+  switch (element.type()) {
+  case simdjson::ondemand::json_type::array:
+    for (auto child : element.get_array()) {
+      traverse(child.value());
+    }
+    break;
+  case simdjson::ondemand::json_type::object:
+    for (auto field : element.get_object()) {
+      traverse(field.value());
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+static void bench_simdjson(benchmark::State& state, std::string json)
+{
+    using namespace simdjson;
+    ondemand::parser parser;
+    json.reserve(json.size() + SIMDJSON_PADDING);
+    while (state.KeepRunning())
+    {
+        auto doc = parser.iterate(json);
+        ondemand::value val = doc;
+        traverse(val);
+    }
+}
 BENCHMARK_CAPTURE(bench_gason, gason_nested_json, nested_json);
 BENCHMARK_CAPTURE(bench_haisu, haisu_nested_json, nested_json);
 BENCHMARK_CAPTURE(bench_js0n, js0n_nested_json, nested_json);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_nested_json, nested_json);
 
 BENCHMARK_CAPTURE(bench_gason, gason_deep_json, deep_json);
 BENCHMARK_CAPTURE(bench_haisu, haisu_deep_json, deep_json);
 BENCHMARK_CAPTURE(bench_js0n, js0n_deep_json, deep_json);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_deep_json, deep_json);
 
 BENCHMARK_CAPTURE(bench_gason, gason_empty_json, empty_json);
 BENCHMARK_CAPTURE(bench_haisu, haisu_empty_json, empty_json);
 BENCHMARK_CAPTURE(bench_js0n, js0n_empty_json, deep_json);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_empty_json, empty_json);
 
 BENCHMARK_CAPTURE(bench_gason, gason_flat_json, flat_json);
 BENCHMARK_CAPTURE(bench_haisu, haisu_flat_json, flat_json);
 BENCHMARK_CAPTURE(bench_js0n, js0n_flat_json, flat_json);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_flat_json, flat_json);
 
 BENCHMARK_CAPTURE(bench_gason, gason_flat_array, flat_array);
 BENCHMARK_CAPTURE(bench_haisu, haisu_flat_array, flat_array);
 BENCHMARK_CAPTURE(bench_js0n, js0n_flat_array, flat_array);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_flat_array, flat_array);
 
 BENCHMARK_CAPTURE(bench_gason, gason_long_names, long_names);
 BENCHMARK_CAPTURE(bench_haisu, haisu_long_names, long_names);
 BENCHMARK_CAPTURE(bench_js0n, js0n_long_names, long_names);
 
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_long_names, long_names);
 BENCHMARK_CAPTURE(bench_gason, gason_array_of_arrays, array_of_arrays);
 BENCHMARK_CAPTURE(bench_haisu, haisu_array_of_arrays, array_of_arrays);
 BENCHMARK_CAPTURE(bench_js0n, js0n_array_of_arrays, array_of_arrays);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_array_of_arrays, array_of_arrays);
 
 BENCHMARK_CAPTURE(bench_gason, gason_array_of_objects, array_of_objects);
 BENCHMARK_CAPTURE(bench_haisu, haisu_array_of_objects, array_of_objects);
 BENCHMARK_CAPTURE(bench_js0n, js0n_array_of_objects, array_of_objects);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_array_of_objects, array_of_objects);
 
 BENCHMARK_CAPTURE(bench_gason, gason_literals, literals);
 BENCHMARK_CAPTURE(bench_haisu, haisu_literals, literals);
 BENCHMARK_CAPTURE(bench_js0n, js0n_literals, literals);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_literals, literals);
 
 BENCHMARK_CAPTURE(bench_gason, gason_large_file, TEST_JSON);
 BENCHMARK_CAPTURE(bench_haisu, haisu_large_file, TEST_JSON);
 BENCHMARK_CAPTURE(bench_js0n, js0n_large_file, TEST_JSON);
+BENCHMARK_CAPTURE(bench_simdjson, js0n_large_file, TEST_JSON);
+BENCHMARK_CAPTURE(bench_simdjson, simdjson_large_file, TEST_JSON);

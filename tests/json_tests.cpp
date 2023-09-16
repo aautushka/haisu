@@ -36,9 +36,8 @@ using bool_literal = haisu::json::bool_literal;
 using null_literal = haisu::json::null_literal;
 using numeric_literal = haisu::json::numeric_literal;
 
-class object : public haisu::json::parser<object>
+struct object : haisu::json::parser<object>
 {
-public:
     void on_key(string_literal lit)
     {
         path_.back() = std::string(lit.view.begin(), lit.view.end());
@@ -90,15 +89,12 @@ public:
         return tree_[t];
     }
 
-private:
     std::vector<std::string> path_;
     haisu::tree<std::string, std::string> tree_;
 };
 
-class array : public haisu::json::parser<array>
+struct array : haisu::json::parser<array>
 {
-public:
-
     void on_array(string_literal lit)
     {
         _arr.emplace_back(lit.view.begin(), lit.view.end());
@@ -129,11 +125,10 @@ public:
         return _arr[i];
     }
 
-private:
     std::vector<std::string> _arr;
 };
 
-struct error_counter : public haisu::json::parser<error_counter, 3>
+struct error_counter : haisu::json::parser<error_counter, 3>
 {
     void on_error(haisu::json::error err)
     {
@@ -694,4 +689,37 @@ TEST_F(json_test, rebuild_json) {
 
     auto out = parse(TEST_JSON);
     ASSERT_TRUE(out == TEST_JSON);
+}
+
+TEST_F(json_test, parsing_errors) {
+    struct parser : haisu::json::parser<parser>
+    {
+        void on_error(haisu::json::error err)
+        {
+            ++error_count;
+        }
+
+        bool has_errors() {
+            return error_count > 0;
+        }
+
+        int error_count{};
+    };
+
+    parser err;
+
+    std::string json(TEST_JSON);
+    for (size_t i = 1; i < 10000 && i < json.size(); i += 4) {
+        auto ch = json[i];
+        json[i] = 0;
+
+        err.parse(json.c_str());
+        ASSERT_TRUE(err.has_errors());
+
+        json[i] = ch;
+    }
+
+    err = {};
+    err.parse(json.c_str());
+    ASSERT_FALSE(err.has_errors());
 }

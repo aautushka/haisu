@@ -4,3 +4,6 @@
 [submodule "googlebench"]
 	path = googlebench
 	url = https://github.com/google/benchmark
+[submodule "bench/simdjson"]
+	path = bench/simdjson
+	url = https://github.com/simdjson/simdjson

@@ -13,5 +13,7 @@ set(SRC
   # js0n/js0n.c
 ) 
 
+add_subdirectory(simdjson)
+
 add_executable(bench ${SRC})
-target_link_libraries(bench benchmark pthread)
+target_link_libraries(bench benchmark pthread simdjson)
