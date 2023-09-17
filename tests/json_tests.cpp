@@ -239,13 +239,13 @@ TEST_F(json_test, parses_partial_json)
 
 TEST_F(json_test, parses_single_quoted_strings)
 {
-    json.parse("{'a':'b'}");
+    json.parse("{\"a\":\"b\"}");
     EXPECT_EQ("b", json["a"]);
 }
 
 TEST_F(json_test, skips_null_value)
 {
-    arr.parse("[null,'a','b']");
+    arr.parse("[null,\"a\",\"b\"]");
 
     EXPECT_EQ("a", arr[1]);
     EXPECT_EQ("b", arr[2]);
@@ -253,51 +253,51 @@ TEST_F(json_test, skips_null_value)
 
 TEST_F(json_test, reads_boolean_true_in_array)
 {
-    arr.parse("[true,'a']");
+    arr.parse("[true,\"a\"]");
 
     EXPECT_EQ("boolean true", arr[0]);
 }
 
 TEST_F(json_test, reads_boolean_false_in_array)
 {
-    arr.parse("[false,'a']");
+    arr.parse("[false,\"a\"]");
 
     EXPECT_EQ("boolean false", arr[0]);
 }
 
 TEST_F(json_test, understands_escaped_quote_character_inside_of_string)
 {
-    json.parse("{'a\\'c':'b'}");
-    EXPECT_EQ("b", json["a\\'c"]);
+    json.parse("{\"a\\\"c\":\"b\"}");
+    EXPECT_EQ("b", json["a\\\"c"]);
 }
 
 TEST_F(json_test, does_not_confuse_escaped_backslash_with_quote)
 {
-    json.parse("{'a\\\\':'b'}");
+    json.parse("{\"a\\\\\":\"b\"}");
     EXPECT_EQ("b", json["a\\\\"]);
 }
 
 TEST_F(json_test, parses_multiple_escape_sequences)
 {
-    json.parse("{'a\\\\\\'c':'b'}");
-    EXPECT_EQ("b", json["a\\\\\\'c"]);
+    json.parse("{\"a\\\\\\\"c\":\"b\"}");
+    EXPECT_EQ("b", json["a\\\\\\\"c"]);
 }
 
 TEST_F(json_test, reads_boolean_true_in_object)
 {
-    json.parse("{'a': true}");
+    json.parse("{\"a\": true}");
     EXPECT_EQ("boolean true", json["a"]);
 }
 
 TEST_F(json_test, reads_boolean_false_in_object)
 {
-    json.parse("{'a': false}");
+    json.parse("{\"a\": false}");
     EXPECT_EQ("boolean false", json["a"]);
 }
 
 TEST_F(json_test, reads_null_literal_from_object)
 {
-    json.parse("{'a': null}");
+    json.parse("{\"a\": null}");
     EXPECT_EQ("null literal", json["a"]);
 }
 
@@ -429,7 +429,7 @@ TEST_F(json_test, terminates_json_parser_middle_way)
     };
 
     parser p;
-    p.parse("['hello', 'world']");
+    p.parse("[\"hello\", \"world\"]");
 
     EXPECT_EQ(1, p.array_size);
 }
@@ -446,14 +446,14 @@ TEST_F(json_test, signals_error_if_does_not_have_enough_memory)
     };
 
     parser p;
-    p.parse("[['hello']]");
+    p.parse("[[\"hello\"]]");
 
     EXPECT_EQ(1, p.error_count);
 }
 
 TEST_F(json_test, parses_numeric_literal_in_object)
 {
-    json.parse("{'a':123456}");
+    json.parse("{\"a\":123456}");
     EXPECT_EQ("123456", json["a"]);
 }
 

@@ -91,6 +91,21 @@ inline const char* skip_to(char ch, const char* str)
     return str;
 }
 
+template <char ch>
+const char* skip_to(const char* str)
+{
+    while (*str && *str != ch) ++str;
+    return str;
+}
+
+template <char ch>
+const char* skip_past(const char* str)
+{
+    auto ret = skip_to<ch>(str);
+    return ret + (*ret ? 1 : 0);
+}
+
+
 inline bool preceded_by_even_number_of_backslashes(const char* str)
 {
     int ret = 1;
@@ -102,11 +117,12 @@ inline bool preceded_by_even_number_of_backslashes(const char* str)
     return ret;
 }
 
-inline const char* skip_to_end_of_string(char quote, const char* str)
+template <char Quote>
+inline const char* skip_to_end_of_string(const char* str)
 {
     while (true)
     {
-        str = skip_to(quote, str);
+        str = skip_to<Quote>(str);
         if (*str && str[-1] == '\\' && preceded_by_even_number_of_backslashes(str - 2))
         {
             ++str;    
@@ -115,19 +131,6 @@ inline const char* skip_to_end_of_string(char quote, const char* str)
         break;
     }
     return str;
-}
-
-template <char ch>
-const char* skip_to(const char* str)
-{
-    return skip_to(ch, str);
-}
-
-template <char ch>
-const char* skip_past(const char* str)
-{
-    auto ret = skip_to<ch>(str);
-    return ret + (*ret ? 1 : 0);
 }
 
 template <typename T>
@@ -609,7 +612,7 @@ public:
         };
 #endif
 
-        do
+        while (true)
         {
 #ifdef DEBUG_JSON_PARSER
             auto prev_state = state;
@@ -718,12 +721,10 @@ public:
                     break;
                 case ':':
                     break;
-                case '\'': // object key, or array item
                 case '"': // object key, or array item
                     {
-                        const auto quote = *s;
                         const auto k = ++s;
-                        s = skip_to_end_of_string(quote, k);
+                        s = skip_to_end_of_string<'"'>(k);
                         switch (state)
                         {
                             case state_object_key:
@@ -872,6 +873,8 @@ public:
                     }
 
                     break;
+                case 0:
+                    goto stop_parsing;
                 default:
                     if constexpr (has_error_handler())
                     {
@@ -883,8 +886,8 @@ public:
             std::cout << ch << " : " << state_str(prev_state) << " --> " << state_str(state) << " : " << (int)stack_.size()  << std::endl;
 #endif
 
+            ++s;
         }
-        while (*++s);
 
 stop_parsing:
         if constexpr (has_error_handler())

@@ -104,10 +104,10 @@ static void bench_gason(benchmark::State& state, std::string json)
 static void bench_haisu(benchmark::State& state, std::string json)
 {
     json_parser parser;
-    std::string j;
+    std::string j = json;
+    j.reserve(j.size() + 64);
     while (state.KeepRunning())
     {
-        j = json;
         parser.parse(j.c_str());
     }
 }
@@ -115,10 +115,9 @@ static void bench_haisu(benchmark::State& state, std::string json)
 static void bench_js0n(benchmark::State& state, std::string json)
 {
     js0n_parser parser;
-    std::string j;
+    std::string j = json;
     while (state.KeepRunning())
     {
-        j = json;
         parser.parse(j.c_str());
     }
 }
@@ -152,6 +151,8 @@ static void bench_simdjson(benchmark::State& state, std::string json)
         traverse(val);
     }
 }
+
+
 BENCHMARK_CAPTURE(bench_gason, gason_nested_json, nested_json);
 BENCHMARK_CAPTURE(bench_haisu, haisu_nested_json, nested_json);
 BENCHMARK_CAPTURE(bench_js0n, js0n_nested_json, nested_json);
@@ -198,7 +199,6 @@ BENCHMARK_CAPTURE(bench_js0n, js0n_literals, literals);
 BENCHMARK_CAPTURE(bench_simdjson, simdjson_literals, literals);
 
 BENCHMARK_CAPTURE(bench_gason, gason_large_file, TEST_JSON);
-BENCHMARK_CAPTURE(bench_haisu, haisu_large_file, TEST_JSON);
 BENCHMARK_CAPTURE(bench_js0n, js0n_large_file, TEST_JSON);
-BENCHMARK_CAPTURE(bench_simdjson, js0n_large_file, TEST_JSON);
 BENCHMARK_CAPTURE(bench_simdjson, simdjson_large_file, TEST_JSON);
+BENCHMARK_CAPTURE(bench_haisu, haisu_large_file, TEST_JSON);
