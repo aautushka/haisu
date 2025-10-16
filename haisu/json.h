@@ -27,6 +27,7 @@ For more information, please refer to <http://unlicense.org/>
 
 // clang-format off
 #pragma once
+#include <cassert>
 #include <cstring>
 #include <string_view>
 #include <array>
